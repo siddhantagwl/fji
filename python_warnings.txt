@@ -1,0 +1,9 @@
+2025.04.03 Pallion (Fine Jewellery Images's conflicted copy 2025-04-29).csv|||Skipped|||Conflicted;
+JPLA_JOBSHEET_v1.85.csv|||Skipped|||JPLA_JOBSHEET_*;
+JOBSHEET_V1.85.csv|||Skipped|||JOBSHEET_*;
+2024.07.19 Gregory 10 Items.csv|||Scanned|||Duplicate;
+2024.07.19 Gregory.csv|||Skipped|||Duplicate;
+2025.04.17 Prouds (Spring) 101 Items.csv|||Scanned|||Duplicate;
+2025.04.17 Prouds (Spring).csv|||Skipped|||Duplicate;
+2025.05.02 Pallion 3 Items.csv|||Scanned|||Duplicate;
+2025.05.02 Pallion.csv|||Skipped|||Duplicate

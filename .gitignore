@@ -1,0 +1,19 @@
+*.xlsx
+*.csv
+__pycache__/
+*.pyc
+
+temp/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+Datasheet/
+_archive/
+_backup/
+.idea/
+.ipynb_checkpoints/
+intermediate/
+old.py
+
