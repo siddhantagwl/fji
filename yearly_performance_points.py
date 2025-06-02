@@ -101,8 +101,14 @@ def calculate_yearly_performance_table(yearly_summary_data, staff_and_their_cate
         for staff_name, all_catg in staff_and_their_categories.items():
 
             cond = (df_staff_exp_KPI_modf['Names'] == staff_name)
-            expected_kpi = df_staff_exp_KPI_modf.loc[cond, month_year_str].iloc[0]
+            filtered = df_staff_exp_KPI_modf.loc[cond, month_year_str]
+            # expected_kpi = df_staff_exp_KPI_modf.loc[cond, month_year_str].iloc[0]
 
+            if filtered.empty:
+                expected_kpi = '-'
+                continue
+
+            expected_kpi = filtered.iloc[0]
             if not expected_kpi:
                 expected_kpi = '-'
                 continue
@@ -148,7 +154,7 @@ def get_performance_points_chart(target_kpi):
     points = 1
 
     for i, group in enumerate(grouped_numbers):
-        
+
         start_rng, end_rng = group[0], group[-1]
         if i == 0:
             # change the point that needs to be start with 1 rather than 0
