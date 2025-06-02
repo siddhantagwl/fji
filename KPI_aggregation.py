@@ -139,6 +139,7 @@ class KPIDataProcessor:
             date_parser=None, # lambda x: dt.datetime.strptime(x, "%d-%b-%Y")
             colsExpected=config.COLS_TO_EXPECT_IN_CSV
         )
+        print()
         self.python_errors_list.extend(errors)
 
         return df, df_lens, df_src_filenames
@@ -176,7 +177,7 @@ class KPIDataProcessor:
 
     def validate_columns(self, df: pd.DataFrame):
         """Validate that CSV columns match expectations"""
-        
+
         if set(config.COLS_TO_EXPECT_IN_CSV) == set(df.columns.tolist()):
             return  # Columns match, no issues
 
@@ -211,6 +212,7 @@ class KPIDataProcessor:
         """
         print('Pre processing Datasheets ...\n')
         errors = []
+        error_filenames = set()
 
         # Convert columns to lowercase
         for col in config.COLS_TO_LOWER_CASE:
@@ -232,17 +234,19 @@ class KPIDataProcessor:
         for col in config.DATE_COLS:
             for row_id, row_value in enumerate(df[col]):
                 try:
-                    df.loc[row_id, col] = pd.to_datetime(
-                        row_value,
-                        infer_datetime_format=True,
-                        dayfirst=True
-                    )
+                    df.loc[row_id, col] = pd.to_datetime(row_value, infer_datetime_format=True, dayfirst=True)
                 except Exception as e:
-                    error_filename, error_row_num = self.get_filename_and_row(
-                        row_id, df_lens, df_src_filenames
-                    )
-                    msg = f'{error_filename}|||{col}|||{error_row_num + 1}|||{row_value}'
+                    error_row_num = self.get_local_row(row_id, df_lens)
+                    error_filename = df.loc[row_id, config.COL_PROJECT_NAME]
+
+                    msg = f'File: "{error_filename}" ||| Col: "{col}" ||| Row Num: "{error_row_num + 1}" ||| Row value: "{row_value}". Error: {str(e)}'
+                    print(msg)
                     errors.append(msg)
+                    error_filenames.add(error_filename)
+
+        # ❌ Drop all rows with those filenames
+        if error_filenames:
+            df = df[~df[config.COL_PROJECT_NAME].isin(error_filenames)].reset_index(drop=True)
 
         # Convert string columns
         for col in config.STRING_COLS:
@@ -260,21 +264,32 @@ class KPIDataProcessor:
             errors.append(msg)
 
         if errors:
-            print('\t Some errors occurred during pre-processing\n' + str(errors))
+            print('\nSome errors occurred during pre-processing:\n' + str(errors))
 
         return df, errors
 
 
-    def get_filename_and_row(self, row_id: int, df_lens: List[int],
-                            df_src_filenames: List[str]) -> Tuple[str, int]:
-        """Get filename and row number for error reporting"""
-        # This function should be implemented based on your utils module
-        len_sum = 0
-        for df_len, filename in zip(df_lens, df_src_filenames):
-            len_sum = len_sum + df_len
-            if row_id < len_sum:
-                return filename, row_id - (len_sum - df_len)
+    # def get_filename_and_row(self, row_id: int, df_lens: List[int],
+    #                         df_src_filenames: List[str]) -> Tuple[str, int]:
+    #     """Get filename and row number for error reporting"""
 
+    #     len_sum = 0
+    #     for df_len, filename in zip(df_lens, df_src_filenames):
+    #         len_sum = len_sum + df_len
+    #         if row_id < len_sum:
+    #             return filename, row_id - (len_sum - df_len)
+
+    def get_local_row(self, row_id: int, df_lengths: List[int]) -> int:
+        """Given a global row ID across multiple stacked DataFrames,
+        return the local row index within its corresponding DataFrame.
+        """
+
+        total_rows_so_far = 0
+        for current_df_len in df_lengths:
+            total_rows_so_far += current_df_len
+            if row_id < total_rows_so_far:
+                local_row = row_id - (total_rows_so_far - current_df_len)
+                return local_row
 
     def handle_errors(self):
         """Handle errors by writing to file and potentially exiting"""
@@ -591,7 +606,7 @@ class KPIDataProcessor:
         try:
             overall_kpi_start_date_str = utils.convert_date_obj_to_str(overall_kpi_start_date)
         except:
-            pass
+            print("Error converting overall KPI start date to string. Check date format.")
 
         df_dict = {
             df_output_sheets.iloc[1, 0]: summary_data['photography_summary'],
@@ -696,7 +711,7 @@ class KPIDataProcessor:
             # Final error check
             if self.python_errors_list:
                 self.handle_errors()
-                raise SystemExit(1)
+                # raise SystemExit(1)
 
             # Preprocess data
             df, preprocessing_errors = self.datasheets_preprocessing(df, df_lens, df_src_filenames)
@@ -704,7 +719,7 @@ class KPIDataProcessor:
 
             if self.python_errors_list:
                 self.handle_errors()
-                raise SystemExit(1)
+                # raise SystemExit(1)
 
             # Prepare supporting data
             active_staff, staff_and_their_categories = self.prepare_staff_data(df_staff_exp_kpi)
