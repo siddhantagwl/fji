@@ -116,7 +116,7 @@ def read_csv_file(csv_filepath, dayfirst=False, date_parser=None):
         df = pd.read_csv(csv_filepath, dayfirst=dayfirst, date_parser=date_parser)
     except Exception as e:
         msg = f'Unreadable csv "{os.path.basename(csv_filepath)}"'
-        print(msg, '\n')
+        print(msg)
     return df, msg
 
 ############################################################
@@ -132,6 +132,7 @@ def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpect
     df_lens = []
     df_src_filenames = []
 
+    print()
     for file in file_path_list:
 
         temp_df, err = read_csv_file(file, dayfirst, date_parser)
