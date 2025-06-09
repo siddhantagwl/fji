@@ -9,18 +9,17 @@ import re
 
 import traceback
 
-def handle_errors(default_return=None, log_traceback=True):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                if log_traceback:
-                    print(f"[ERROR] in '{func.__name__}': {e}")
-                    traceback.print_exc()
-                return default_return
-        return wrapper
-    return decorator
+def catch_errors(func):
+    """
+    A decorator to catch and log errors in the decorated function.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"Error in function '{func.__name__}': {e}")
+
+    return wrapper
 
 
 def get_month_days(year, month):
@@ -131,15 +130,17 @@ def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpect
     errors = []
     df_lens = []
     df_src_filenames = []
+    warnings = []
+    file_path_list = sorted(file_path_list)
 
     print()
-    for file in file_path_list:
+    for i, file in enumerate(file_path_list):
+        filename = os.path.basename(file)
+        print(f"{i}, Reading file: {filename}")
 
-        temp_df, err = read_csv_file(file, dayfirst, date_parser)
-        df_lens.append(len(temp_df))
-        df_src_filenames.append(os.path.basename(file))
-        if err:
-            errors.append(err)
+        temp_df, warn = read_csv_file(file, dayfirst, date_parser)
+        if warn:
+            warnings.append(warn)
             continue
 
         csvCols = temp_df.columns.tolist()
@@ -148,23 +149,26 @@ def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpect
         is_col_name_changed = False
         for col in csvCols:
             if col in config.BACKWARD_COLUMN_COMPATIBILITY:
-                csvCols_mapped.append(config.BACKWARD_COLUMN_COMPATIBILITY[col])
                 is_col_name_changed = True
+                csvCols_mapped.append(config.BACKWARD_COLUMN_COMPATIBILITY[col])
+                # warnings.append(f"{filename}|||Scanned|||Found old version col name -> {col}")
             else:
                 csvCols_mapped.append(col)
 
         if not (colsExpected == csvCols_mapped):
             extra_cols_in_csv = list(set(csvCols_mapped) - set(colsExpected))
             missing_cols_in_csv = list(set(colsExpected) - set(csvCols_mapped))
-            msg = f'Check "{os.path.basename(file)}" --> Columns mismatch. Extra: "{extra_cols_in_csv}". Missing: "{missing_cols_in_csv}". jobsheet version: {df.jobsheet_fileversion.iloc[0]}'
-            errors.append(msg)
+            msg = f'Check "{filename}" --> Columns mismatch. Extra: "{extra_cols_in_csv}". Missing: "{missing_cols_in_csv}". jobsheet version: {df.jobsheet_fileversion.iloc[0]}'
+            warnings.append(msg)
 
         if is_col_name_changed:
             temp_df.rename(columns=config.BACKWARD_COLUMN_COMPATIBILITY, inplace=True)
 
         df = pd.concat([df, temp_df], ignore_index=True)
+        df_lens.append(len(temp_df))
+        df_src_filenames.append(filename)
 
-    return df, errors, df_lens, df_src_filenames
+    return df, errors, warnings, df_lens, df_src_filenames
     # return pd.concat((pd.read_csv(f, dayfirst=dayfirst, date_parser=date_parser) for f in file_path_list), ignore_index=True)
 
 
@@ -241,35 +245,33 @@ def filter_data_files(all_kpi_files):
 
     for file_path in all_kpi_files:
 
-        filename = os.path.basename(file_path)
+        filename:str = os.path.basename(file_path).lower()
 
         # Rule 1: Skip conflicted files
-        if ("conflicted" in filename):
+        if ("conflicted" in filename.lower()):
             warnings.append(f"{filename}|||Skipped|||Conflicted")
             remaining_files.discard(file_path)
             continue
 
         # Rule 2: Skip JOBSHEET_* or JPLA_JOBSHEET_*
-        if (filename.startswith('JOBSHEET_') or filename.startswith("JPLA_JOBSHEET_")):
-            tag = "JPLA_JOBSHEET_*" if filename.startswith("JPLA") else "JOBSHEET_*"
+        if (filename.startswith('jobsheet_') or filename.startswith("jpla_jobsheet")):
+            tag = "JPLA_JOBSHEET_*" if filename.startswith("jpla") else "JOBSHEET_*"
             warnings.append(f"{filename}|||Skipped|||{tag}")
             remaining_files.discard(file_path)
             continue
 
-
     # Rule 3: Handle duplicates like 'xyz 5 Items.xlsx' vs 'xyz.xlsx'
-    remaining_files = remove_duplicate_files(list(remaining_files), warnings)
-
+    remaining_files = remove_duplicate_files(remaining_files, warnings)
     return remaining_files, warnings
 
 
-def remove_duplicate_files(file_list, warnings):
-    remaining = set(file_list)
+def remove_duplicate_files(remaining_files: set, warnings:list) -> list:
+    remaining_file_list = list(remaining_files)
 
-    for base_file in file_list:
+    for base_file in remaining_file_list:
         base_stem = Path(base_file).stem
 
-        for other_file in file_list:
+        for other_file in remaining_file_list:
             if base_file == other_file:
                 continue
 
@@ -284,8 +286,8 @@ def remove_duplicate_files(file_list, warnings):
 
                 warnings.append(f"{os.path.basename(to_keep)}|||Scanned|||Duplicate")
                 warnings.append(f"{os.path.basename(to_remove)}|||Skipped|||Duplicate")
-                remaining.discard(to_remove)
+                remaining_files.discard(to_remove)
 
-    return list(remaining)
+    return list(remaining_files)
 
 

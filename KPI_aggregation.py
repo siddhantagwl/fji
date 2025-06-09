@@ -11,9 +11,8 @@ from typing import List, Optional, Tuple
 import pandas as pd
 import warnings
 
-
+sys.dont_write_bytecode = True
 warnings.filterwarnings('ignore')
-pd.options.display.max_columns = None
 
 curr_path = os.getcwd()
 sys.path.append(os.path.join(curr_path, 'python_program'))
@@ -44,46 +43,58 @@ class KPIDataProcessor:
             config.PYTHON_CODES_FOLDER_NAME,
             config.PYTHON_WARNINGS_FILENAME
         )
+        self.datasheet_folder_path = os.path.join(self.curr_path, config.DATESHEETS_FOLDER_NAME)
+        self.validate_datasheet_folder()
+
+    def validate_datasheet_folder(self) -> str:
+        """Validate that the datasheet folder exists"""
+        if not os.path.exists(self.datasheet_folder_path):
+            msg = (f'**Critical Error - Unable to find folder which contains exported files from FJI Jobsheet** '
+                   f'--> {self.datasheet_folder_path}')
+            print(msg, '\n')
+            self.python_errors_list.append(msg)
+            self.handle_errors()
+            raise SystemExit(1)
 
     def cleanup_existing_logs(self):
         """Remove existing error and warning log files"""
-        if os.path.exists(self.python_errors_filepath):
-            os.remove(self.python_errors_filepath)
-            print('Deleted existing python errors file!\n')
-
-        if os.path.exists(self.python_warnings_filepath):
-            os.remove(self.python_warnings_filepath)
-            print('Deleted existing python warnings file!\n')
+        for filepath in [self.python_errors_filepath, self.python_warnings_filepath]:
+            if not os.path.exists(filepath):
+                continue
+            os.remove(filepath)
+            print(f'Deleted existing file: {filepath}\n')
 
 
     def load_configuration_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Load all required configuration data from Excel files"""
         print("Loading configuration data...")
 
+        input_excel_path = os.path.join(self.curr_path, config.INPUT_UI_FILENAME)
+
         # Read staff expected KPI sheet
         df_staff_exp_kpi, errors = utils.read_excel_file(
-            config.INPUT_UI_FILENAME,
+            input_excel_path,
             config.STAFF_EXPECTED_KPI_SHEETNAME
         )
         self.python_errors_list.extend(errors)
 
         # Read Category Points per Job (PPJ)
         df_catg_ppj, errors = utils.read_excel_file(
-            config.INPUT_UI_FILENAME,
+            input_excel_path,
             config.CATEGORY_PPJ_SHEETNAME
         )
         self.python_errors_list.extend(errors)
 
         # Read output sheet names
         df_output_sheets, errors = utils.read_excel_file(
-            config.INPUT_UI_FILENAME,
+            input_excel_path,
             sheet_name=config.OUTPUT_SHEETNAMES
         )
         self.python_errors_list.extend(errors)
 
         # Read date inputs
         user_input_df, errors = utils.read_excel_file(
-            config.INPUT_UI_FILENAME,
+            input_excel_path,
             sheet_name=config.DATE_INPUT_SHEETNAME
         )
         self.python_errors_list.extend(errors)
@@ -102,29 +113,13 @@ class KPIDataProcessor:
         return include_archives, include_overall
 
 
-    def validate_datasheet_folder(self) -> str:
-        """Validate that the datasheet folder exists"""
-        datasheet_folder_path = os.path.join(self.curr_path, config.DATESHEETS_FOLDER_NAME)
-        print(f'Raw CSVs input file path: "{datasheet_folder_path}"')
-
-        if not os.path.exists(datasheet_folder_path):
-            msg = (f'**Critical Error - Unable to find folder which contains exported files from FJI Jobsheet** '
-                   f'--> {datasheet_folder_path}')
-            print(msg, '\n')
-            self.python_errors_list.append(msg)
-            self.handle_errors()
-            raise SystemExit(1)
-
-        return datasheet_folder_path
-
-
-    def load_main_data_files(self, datasheet_folder_path: str) -> Tuple[pd.DataFrame, List[int], List[str]]:
+    def load_main_data_files(self) -> Tuple[pd.DataFrame, List[int], List[str]]:
         """Load and process main KPI data files"""
-        all_kpi_files = glob.glob(os.path.join(datasheet_folder_path, "*.csv"))
-        print(f'Found {len(all_kpi_files)} KPI file(s)')
+        all_kpi_files = glob.glob(os.path.join(self.datasheet_folder_path, "*.csv"))
+        print(f'Found {len(all_kpi_files)} KPI file(s) in "{self.datasheet_folder_path}" ...\n')
 
         # Filter files
-        print('Filtering files ...')
+        print('Filtering files like duplicates, conflicted, jobsheets ...')
         remaining_kpi_files, file_warnings = utils.filter_data_files(all_kpi_files)
         print(f'Remained {len(remaining_kpi_files)} KPI file(s)')
 
@@ -133,25 +128,26 @@ class KPIDataProcessor:
             utils.write_to_file(self.python_warnings_filepath, self.python_warnings_list)
 
         # Read data files
-        print('Reading files ...')
-        df, errors, df_lens, df_src_filenames = utils.read_data_files(
+        print(f'Reading remaining {len(remaining_kpi_files)} files ...')
+        df, errors, warnings, df_lens, df_src_filenames = utils.read_data_files(
             remaining_kpi_files,
             date_parser=None, # lambda x: dt.datetime.strptime(x, "%d-%b-%Y")
             colsExpected=config.COLS_TO_EXPECT_IN_CSV
         )
         print()
         self.python_errors_list.extend(errors)
+        self.python_warnings_list.extend(warnings)
 
         return df, df_lens, df_src_filenames
 
 
-    def load_archive_data(self, datasheet_folder_path: str, include_archives: str) -> Optional[pd.DataFrame]:
+    def load_archive_data(self, include_archives: str) -> Optional[pd.DataFrame]:
         """Load archive data if requested"""
         if include_archives != 'y':
             return None
 
         print('\nReading Archives ...\n')
-        archive_kpi_path = os.path.join(datasheet_folder_path, config.ARCHIVE_FOLDER_NAME)
+        archive_kpi_path = os.path.join(self.datasheet_folder_path, config.ARCHIVE_FOLDER_NAME)
 
         if not os.path.exists(archive_kpi_path):
             msg = f"'{config.ARCHIVE_FOLDER_NAME}' folder doesn't exist. Please check"
@@ -204,8 +200,7 @@ class KPIDataProcessor:
         ]
 
 
-    def datasheets_preprocessing(self, df: pd.DataFrame, df_lens: List[int],
-                                df_src_filenames: List[str]) -> Tuple[pd.DataFrame, List[str]]:
+    def datasheets_preprocessing(self, df: pd.DataFrame, df_lens: List[int]) -> Tuple[pd.DataFrame, List[str]]:
         """
         Preprocess datasheet data with improved error reporting
         Modified by Kamel Mohamed on 19/03/2024 to include filename, row number and value in date columns errors
@@ -694,14 +689,11 @@ class KPIDataProcessor:
             # Get processing options
             include_archives, include_overall = self.get_processing_options(user_input_df)
 
-            # Validate datasheet folder
-            datasheet_folder_path = self.validate_datasheet_folder()
-
             # Load main data
-            df, df_lens, df_src_filenames = self.load_main_data_files(datasheet_folder_path)
+            df, df_lens, df_src_filenames = self.load_main_data_files()
 
             # Load archive data if needed
-            df_archive = self.load_archive_data(datasheet_folder_path, include_archives)
+            df_archive = self.load_archive_data(include_archives)
             if df_archive is not None:
                 df = pd.concat([df, df_archive])
 
@@ -713,8 +705,11 @@ class KPIDataProcessor:
                 self.handle_errors()
                 # raise SystemExit(1)
 
+            if self.python_warnings_list:
+                utils.write_to_file(self.python_warnings_filepath, self.python_warnings_list)
+
             # Preprocess data
-            df, preprocessing_errors = self.datasheets_preprocessing(df, df_lens, df_src_filenames)
+            df, preprocessing_errors = self.datasheets_preprocessing(df, df_lens)
             self.python_errors_list.extend(preprocessing_errors)
 
             if self.python_errors_list:

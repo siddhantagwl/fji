@@ -18,4 +18,5 @@ intermediate/
 old.py
 *.txt
 !.gitignore
-
+python_errors.txt
+python_warnings.txt
