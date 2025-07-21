@@ -5,8 +5,15 @@ import utils
 
 # Summary of Retouchers - All projects combined
 
-def calc_retouches(df: DataFrame):
-
+def calc_retouches(df: DataFrame) -> tuple[int, int, int]:
+    """
+    Calculate total transfer, retouches, and variance from the DataFrame.
+    if reject_retouchor_pay is Y then ignore that count
+    else:
+        - sum the transfer column.
+        - to calculate retouches sum columns [photography, bespoke, superimpose, samples retake]
+        - to calculate variance sum columns [capped, photography to variance, variance, combine]
+    """
     transfer = 0
     retouches = 0
     variance = 0
@@ -18,13 +25,11 @@ def calc_retouches(df: DataFrame):
 
         transfer += df.loc[indx, config.COL_TRANSFER]
 
-        cols = [config.COL_PHOTOGRAPHY, config.COL_BESPOKE,
-                config.COL_SUPERIMPOSE, config.COL_SAMPLES_RESTAKE]
+        cols = [config.COL_PHOTOGRAPHY, config.COL_BESPOKE, config.COL_SUPERIMPOSE, config.COL_SAMPLES_RESTAKE]
         for col in cols:
             retouches += df.loc[indx, col]
 
-        cols = [config.COL_CAPPED, config.COL_PHOTOGRAPHY_TO_VARIANCE,
-                config.COL_VARIANCE, config.COL_COMBINE]
+        cols = [config.COL_CAPPED, config.COL_PHOTOGRAPHY_TO_VARIANCE, config.COL_VARIANCE, config.COL_COMBINE]
         for col in cols:
             variance += df.loc[indx, col]
 

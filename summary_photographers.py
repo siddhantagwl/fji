@@ -1,23 +1,19 @@
 # Summary of Photographers - All projects
-
-# import os
-# import sys
-
-# curr_path = os.getcwd()
-# print(curr_path)
-# sys.path.append(os.path.join(curr_path, 'python_program'))
-
 import config
 import utils
 from pandas import DataFrame
 
 
-def calc_photographers(df: DataFrame):
-
+def calc_photographers(df: DataFrame) -> tuple[int, int]:
+    """
+    Calculate the total items and images for photographers.
+    sum the values in the columns COL_PHOTOGRAPHY, COL_BESPOKE, COL_PHOTOGRAPHY_TO_VARIANCE, COL_SAMPLES_RESTAKE
+    and return the total items and images.
+    increment the images count if the total is greater than 0.
+    """
     items, images = 0, 0
 
-    cols_to_sum = [config.COL_PHOTOGRAPHY, config.COL_BESPOKE,
-                   config.COL_PHOTOGRAPHY_TO_VARIANCE, config.COL_SAMPLES_RESTAKE]
+    cols_to_sum = [config.COL_PHOTOGRAPHY, config.COL_BESPOKE, config.COL_PHOTOGRAPHY_TO_VARIANCE, config.COL_SAMPLES_RESTAKE]
 
     for indx, row in df.iterrows():
 
@@ -42,7 +38,7 @@ def get_all_photographer_names(df: DataFrame):
     p3_sign_names = utils.df_column_to_uniques_list(df, config.COL_PHOTOGRAPHER_3)
 
     all_photographer_names = p1_sign_names + p2_sign_names + p3_sign_names
-    all_photographer_names = list(dict.fromkeys(all_photographer_names))
+    all_photographer_names = list(dict.fromkeys(all_photographer_names)) # dropping duplicates while maintaining order
     all_photographer_names = utils.remove_empty_str_values(all_photographer_names)
 
     return all_photographer_names
