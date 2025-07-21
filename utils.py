@@ -158,7 +158,7 @@ def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpect
         if not (colsExpected == csvCols_mapped):
             extra_cols_in_csv = list(set(csvCols_mapped) - set(colsExpected))
             missing_cols_in_csv = list(set(colsExpected) - set(csvCols_mapped))
-            msg = f'Check "{filename}" --> Columns mismatch. Extra: "{extra_cols_in_csv}". Missing: "{missing_cols_in_csv}". jobsheet version: {df.jobsheet_fileversion.iloc[0]}'
+            msg = f'Check "{filename}" --> Columns mismatch. Extra: "{extra_cols_in_csv}". Missing: "{missing_cols_in_csv}". jobsheet version: {temp_df.jobsheet_fileversion.iloc[0]}'
             warnings.append(msg)
 
         if is_col_name_changed:
