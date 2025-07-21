@@ -350,6 +350,25 @@ class KPIDataProcessor:
             'yp_end_date': user_end_date_yp_obj
         }
 
+    def file_tag_and_jobsheet_version_analysis(self, df: pd.DataFrame):
+        """Analyze file tags and jobsheet versions in the DataFrame"""
+        temp_df = df.copy()
+        # temp_df[config.COL_FILETAG] = temp_df[config.COL_FILETAG].fillna('')
+        # temp_df[config.COL_JOBSHEET_FILEVERSION] = temp_df[config.COL_JOBSHEET_FILEVERSION].fillna('')
+
+        # file_tags = temp_df[config.COL_FILETAG].unique().tolist()
+        # jobsheet_versions = temp_df[config.COL_JOBSHEET_FILEVERSION].unique().tolist()
+
+        # Drop duplicate rows based on these columns
+        subset = [config.COL_PROJECT_NAME, config.COL_FILETAG, config.COL_JOBSHEET_FILEVERSION]
+        df_cleaned = temp_df.drop_duplicates(subset=subset)
+        df_cleaned = df_cleaned[subset].reset_index(drop=True)
+
+        # print(f'File Tags: {file_tags}')
+        # print(f'Jobsheet Versions: {jobsheet_versions}')
+
+        return df_cleaned
+
 
     def generate_summary_reports(self, df: pd.DataFrame, include_overall: str,
                                 date_ranges: dict) -> dict:
