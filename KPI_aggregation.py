@@ -361,6 +361,7 @@ class KPIDataProcessor:
 
         # Drop duplicate rows based on these columns
         subset = [config.COL_PROJECT_NAME, config.COL_FILETAG, config.COL_JOBSHEET_FILEVERSION]
+        temp_df = temp_df[subset]
         df_cleaned = temp_df.drop_duplicates(subset=subset)
         df_cleaned = df_cleaned[subset].reset_index(drop=True)
 
@@ -511,7 +512,7 @@ class KPIDataProcessor:
 
     def create_excel_output(self, df: pd.DataFrame, summary_data: dict, df_output_sheets: pd.DataFrame,
                            date_ranges: dict, include_overall: str, df_yearly_performance: pd.DataFrame,
-                           df_points_chart: pd.DataFrame):
+                           df_points_chart: pd.DataFrame, df_file_tag_and_jobsheet_version: pd.DataFrame):
         """Create the final Excel output file"""
         import datetime as dt
         import numbers
@@ -555,6 +556,9 @@ class KPIDataProcessor:
         self._write_yearly_performance_sheet(
             writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart, date_ranges
         )
+
+        # Write job sheet version analysis
+        df_file_tag_and_jobsheet_version.to_excel(writer, sheet_name='filetag_jobsheet_ver_analys', index=False)
 
         writer.close()
         return excel_filepath
@@ -761,10 +765,13 @@ class KPIDataProcessor:
                 active_staff, ppj_dict, sub_catg_list
             )
 
+            # Create file tag and job sheet version analysis
+            df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
+
             # Create Excel output
             excel_filepath = self.create_excel_output(
                 df, summary_data, df_output_sheets, date_ranges, include_overall,
-                df_yearly_performance, df_points_chart
+                df_yearly_performance, df_points_chart, df_file_tag_and_jobsheet_version
             )
 
             end_time = round((time.time() - start_time))
