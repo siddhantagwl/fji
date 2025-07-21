@@ -1,10 +1,11 @@
+from pandas import DataFrame
 import config
 import utils
 
 
 # Summary of Retouchers - All projects combined
 
-def calc_retouches(df):
+def calc_retouches(df: DataFrame):
 
     transfer = 0
     retouches = 0
@@ -44,9 +45,9 @@ def get_all_retoucher_names(df):
     return all_retoucher_names
 
 
-def summary_of_retouchers_all_projects(df, include_overall, start_date, end_date):
+def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_date, end_date):
 
-    df_date_filtered = df.copy()
+    df_date_filtered: DataFrame = df.copy()
 
     if include_overall == 'n':
         # don't include the overall dates, rather use the start and end date provided by
@@ -149,7 +150,7 @@ def summary_of_retouchers_project_wise(df, start_date, end_date):
                 retouches += retouches1
                 variance += variance1
 
-            temp_concat_df = utils.concat_dfs([r1_project_filtered_df, r2_project_filtered_df, r3_project_filtered_df, r4_project_filtered_df, r5_project_filtered_df])
+            temp_concat_df: DataFrame = utils.concat_dfs([r1_project_filtered_df, r2_project_filtered_df, r3_project_filtered_df, r4_project_filtered_df, r5_project_filtered_df])
             review = temp_concat_df[config.COL_WARNINGS].str.contains(config.REVIEW_RETOUCHER).any()
             review = 'Investigate' if (review == True) else ''
 

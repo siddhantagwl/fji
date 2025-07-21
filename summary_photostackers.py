@@ -1,3 +1,4 @@
+from pandas import DataFrame
 import config
 import utils
 
@@ -16,11 +17,11 @@ def get_all_photostackers_names(df):
     return all_photostacker_names
 
 
-def summary_of_photostackers_all_projects(df, include_overall, start_date, end_date):
+def summary_of_photostackers_all_projects(df: DataFrame, include_overall, start_date, end_date):
 
     # making an initial copy, if no dates have to be included, this df_filtered
     # can be used to maintain code consistency
-    df_date_filtered = df.copy()
+    df_date_filtered: DataFrame = df.copy()
 
     if include_overall == 'n':
         # don't include the overall dates, rather use the start and end date provided by
@@ -134,11 +135,11 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
                 adjust += utils.sum_df_on_a_column(temp_df, config.COL_ADJUST)
                 photostack += utils.sum_df_on_a_column(temp_df, config.COL_PHOTOSTACK)
 
-            temp_concat_df = utils.concat_dfs([p1_project_filtered_df, p2_project_filtered_df])
+            temp_concat_df: DataFrame = utils.concat_dfs([p1_project_filtered_df, p2_project_filtered_df])
             review = temp_concat_df[config.COL_WARNINGS].str.contains(config.REVIEW_PHOTOSTACKER).any()
             review = 'Investigate' if (review == True) else ''
 
-            df_photostacker_project_wise.loc[len(df_photostacker_project_wise)] = [start_date, end_date, p_name, project_name, 
+            df_photostacker_project_wise.loc[len(df_photostacker_project_wise)] = [start_date, end_date, p_name, project_name,
                                                                                   rename, adjust, photostack, review]
 
     df_photostacker_project_wise.set_index('Photostacker', inplace=True)

@@ -9,10 +9,10 @@
 
 import config
 import utils
+from pandas import DataFrame
 
 
-
-def calc_photographers(df):
+def calc_photographers(df: DataFrame):
 
     items, images = 0, 0
 
@@ -35,7 +35,7 @@ def calc_photographers(df):
     return items, images
 
 
-def get_all_photographer_names(df):
+def get_all_photographer_names(df: DataFrame):
 
     p1_sign_names = utils.df_column_to_uniques_list(df, config.COL_PHOTOGRAPHER_1)
     p2_sign_names = utils.df_column_to_uniques_list(df, config.COL_PHOTOGRAPHER_2)
@@ -49,7 +49,7 @@ def get_all_photographer_names(df):
 
 
 
-def summary_of_photographers_all_projects(df, include_overall, start_date, end_date):
+def summary_of_photographers_all_projects(df: DataFrame, include_overall, start_date, end_date):
 
     cols = ['Photographer', 'Items', 'Images', '-', '#_projects_worked']
     df_photographers = utils.get_empty_df(cols)
@@ -70,9 +70,9 @@ def summary_of_photographers_all_projects(df, include_overall, start_date, end_d
         if (p_name == "") or (p_name in config.UNMERGE_START_CONST_VALUES):
             continue
 
-        p1_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_1, p_name)
-        p2_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_2, p_name)
-        p3_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_3, p_name)
+        p1_df: DataFrame = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_1, p_name)
+        p2_df: DataFrame = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_2, p_name)
+        p3_df: DataFrame = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_3, p_name)
 
         project_names_p1 = p1_df[config.COL_PROJECT_NAME].unique().tolist()
         project_names_p2 = p2_df[config.COL_PROJECT_NAME].unique().tolist()
@@ -98,7 +98,7 @@ def summary_of_photographers_all_projects(df, include_overall, start_date, end_d
 
 # Summary of Photographers - Project Wise
 
-def summary_of_photographers_project_wise(df, start_date, end_date):
+def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
 
     # make an empty output Dataframe
     cols = ['start_date', 'end_date', 'Photographer', 'Project_name', 'Items', 'Images']

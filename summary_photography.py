@@ -1,12 +1,13 @@
 import config
 import utils
+from pandas import DataFrame
 
 from summary_photographers import get_all_photographer_names
 from summary_photostackers import get_all_photostackers_names
 from summary_retouchers import get_all_retoucher_names
 
 
-def summary_of_photography(df):
+def summary_of_photography(df: DataFrame):
 
     cols = ['Photography_date', 'Items', 'Images', '#_projects_done']
     df_photography_summary = utils.get_empty_df(cols)
@@ -22,6 +23,7 @@ def summary_of_photography(df):
         total_images = 0
 
         for indx, row in group.iterrows():
+            group: DataFrame
             unmerge_start_val = group.loc[indx, config.COL_UNMERGE_START]
             if unmerge_start_val == config.TRANSFER_VALUE:
                 continue
@@ -53,7 +55,7 @@ def summary_of_photography(df):
     return df_photography_summary
 
 
-def summary_of_photography_project_wise(df):
+def summary_of_photography_project_wise(df: DataFrame):
 
     cols = ['Photography_date', 'Project_name', 'Items', 'Images', \
             'Photographers', 'Photostackers', 'Retouchers']
