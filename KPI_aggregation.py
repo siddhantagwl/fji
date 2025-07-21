@@ -174,21 +174,22 @@ class KPIDataProcessor:
     def validate_columns(self, df: pd.DataFrame):
         """Validate that CSV columns match expectations"""
 
-        if set(config.COLS_TO_EXPECT_IN_CSV) == set(df.columns.tolist()):
+        actual_cols = df.columns.tolist()
+        if set(config.COLS_TO_EXPECT_IN_CSV) == set(actual_cols):
             return  # Columns match, no issues
 
         msg = "\nColumn names in CSVs did not match from what was expected"
-        print(msg)
 
         # Check for extra columns
-        extra_cols = list(set(df.columns.tolist()) - set(config.COLS_TO_EXPECT_IN_CSV))
+        extra_cols = list(set(actual_cols) - set(config.COLS_TO_EXPECT_IN_CSV))
         if extra_cols:
             msg += f"\nExtra columns found: {', '.join(extra_cols)}"
 
         # Check for missing columns
-        missing_cols = list(set(config.COLS_TO_EXPECT_IN_CSV) - set(df.columns.tolist()))
+        missing_cols = list(set(config.COLS_TO_EXPECT_IN_CSV) - set(actual_cols))
         if missing_cols:
             msg += f"\nMissing columns: {', '.join(missing_cols)}"
+        print(msg)
 
         self.python_errors_list.extend(msg.split('\n'))
 
