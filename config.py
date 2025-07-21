@@ -116,7 +116,7 @@ DATE_COLS = [COL_PHOTOGRAPHER_DATE, COL_PHOTOSTACKER_DATE_1,
              COL_DATE_DONE_RETOUCHERS_SIGN_4, COL_DATE_DONE_RETOUCHERS_SIGN_5
         ]
 
-# old column in older jobsheets and their new names
+# old column in older jobsheets and their new names. OLD NAME: NEW NAME
 BACKWARD_COLUMN_COMPATIBILITY = {
     "Unmerge (Start)": COL_UNMERGE_START,
     "Unmerge (End)": COL_UNMERGE_END,
@@ -131,6 +131,7 @@ STAFF_EXPECTED_KPI_SHEETNAME = 'Staff_Expected_KPI'
 CATEGORY_PPJ_SHEETNAME = "Define_Category_PPJ"
 DATE_INPUT_SHEETNAME = "date_input_hidden_py"
 OUTPUT_SHEETNAMES = "sheet_names_hidden_py"
+OVERALL_SUMMARY_SHEETNAME = 'Overall Summary'
 
 PYTHON_CODES_FOLDER_NAME = 'python_program'
 DATESHEETS_FOLDER_NAME = 'Datasheet'

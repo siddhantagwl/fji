@@ -544,7 +544,7 @@ class KPIDataProcessor:
         """Write the summary header information"""
         import datetime as dt
 
-        worksheet.write(0, 0, 'Overall Summary')
+        worksheet.write(0, 0, config.OVERALL_SUMMARY_SHEETNAME)
         worksheet.write(1, 0, 'Start Date:')
         worksheet.write(2, 0, 'End Date:')
         worksheet.write(3, 0, 'Working Days')
