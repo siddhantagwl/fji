@@ -114,62 +114,68 @@ def read_csv_file(csv_filepath, dayfirst=False, date_parser=None):
     try:
         df = pd.read_csv(csv_filepath, dayfirst=dayfirst, date_parser=date_parser)
     except Exception as e:
-        msg = f'Unreadable csv "{os.path.basename(csv_filepath)}"'
+        msg = f"Unreadable csv '{os.path.basename(csv_filepath)}'|||Error->{e}"
         print(msg)
     return df, msg
 
-############################################################
-#
-# Modified by Kamel Mohamed on 19/03/2024
-# to include filename, row number and value in the error reporting
-#
-############################################################
 
-def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpected=None):
-    df = pd.DataFrame()
+from concurrent.futures import ThreadPoolExecutor
+from typing import Callable, List, Tuple, Optional
+from time import time
+import logging
+
+def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpected: list =None, use_threads: bool = True, show_progress: bool = True):
+
     errors = []
     df_lens = []
     df_src_filenames = []
     warnings = []
     file_path_list = sorted(file_path_list)
+    df_list = []
 
-    print()
-    for i, file in enumerate(file_path_list):
+    def read_and_process(file):
         filename = os.path.basename(file)
-        print(f"{i}, Reading file: {filename}")
+        df, warn = read_csv_file(file, dayfirst, date_parser)
+        return filename, df, warn
 
-        temp_df, warn = read_csv_file(file, dayfirst, date_parser)
+    reader = ThreadPoolExecutor().map if use_threads else map
+    jobs = reader(read_and_process, file_path_list)
+
+    if show_progress:
+        from tqdm import tqdm
+        jobs = tqdm(jobs, total=len(file_path_list), desc="Reading CSV files")
+
+    for i, (filename, temp_df, warn) in enumerate(jobs):
+        print(f"{i}. Reading: {filename}")
         if warn:
             warnings.append(warn)
             continue
 
-        csvCols = temp_df.columns.tolist()
+        original_cols = temp_df.columns.tolist()
 
-        csvCols_mapped = []
-        is_col_name_changed = False
-        for col in csvCols:
-            if col in config.BACKWARD_COLUMN_COMPATIBILITY:
-                is_col_name_changed = True
-                csvCols_mapped.append(config.BACKWARD_COLUMN_COMPATIBILITY[col])
-                # warnings.append(f"{filename}|||Scanned|||Found old version col name -> {col}")
-            else:
-                csvCols_mapped.append(col)
+        # Apply backward mapping if needed
+        mapped_cols = [config.BACKWARD_COLUMN_COMPATIBILITY.get(col, col) for col in original_cols]
 
-        if not (colsExpected == csvCols_mapped):
-            extra_cols_in_csv = list(set(csvCols_mapped) - set(colsExpected))
-            missing_cols_in_csv = list(set(colsExpected) - set(csvCols_mapped))
-            msg = f'Check "{filename}" --> Columns mismatch. Extra: "{extra_cols_in_csv}". Missing: "{missing_cols_in_csv}". jobsheet version: {temp_df.jobsheet_fileversion.iloc[0]}'
-            warnings.append(msg)
-
-        if is_col_name_changed:
+        # If mapping changed, rename the columns in the DataFrame
+        if mapped_cols != original_cols:
             temp_df.rename(columns=config.BACKWARD_COLUMN_COMPATIBILITY, inplace=True)
 
-        df = pd.concat([df, temp_df], ignore_index=True)
+        # Check if mapped columns match expected
+        if colsExpected and mapped_cols != colsExpected:
+            extra = list(set(mapped_cols) - set(colsExpected))
+            missing = list(set(colsExpected) - set(mapped_cols))
+            version = temp_df.get("jobsheet_fileversion", pd.Series(["?"])).iloc[0]
+            warnings.append(
+                f'Check "{filename}" --> Columns mismatch. Extra: "{extra}". Missing: "{missing}". jobsheet version: {version}'
+            )
+
+        df_list.append(temp_df)
         df_lens.append(len(temp_df))
         df_src_filenames.append(filename)
 
-    return df, errors, warnings, df_lens, df_src_filenames
-    # return pd.concat((pd.read_csv(f, dayfirst=dayfirst, date_parser=date_parser) for f in file_path_list), ignore_index=True)
+    final_df = pd.concat(df_list, ignore_index=True)
+
+    return final_df, errors, warnings, df_lens, df_src_filenames
 
 
 def multiple_dfs_on_same_sheet(writer, df_list, sheet_name, spaces, row, index=True):
