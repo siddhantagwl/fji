@@ -206,6 +206,8 @@ class KPIDataProcessor:
         Preprocess datasheet data with improved error reporting
         Modified by Kamel Mohamed on 19/03/2024 to include filename, row number and value in date columns errors
         """
+        import numpy as np
+
         print('Pre processing Datasheets ...\n')
         errors = []
         error_filenames = set()
@@ -228,17 +230,21 @@ class KPIDataProcessor:
 
         # Convert date columns with detailed error reporting
         for col in config.DATE_COLS:
-            for row_id, row_value in enumerate(df[col]):
-                try:
-                    df.loc[row_id, col] = pd.to_datetime(row_value, infer_datetime_format=True, dayfirst=True)
-                except Exception as e:
-                    error_row_num = self.get_local_row(row_id, df_lens)
-                    error_filename = df.loc[row_id, config.COL_PROJECT_NAME]
-
-                    msg = f'File: "{error_filename}" ||| Col: "{col}" ||| Row Num: "{error_row_num + 1}" ||| Row value: "{row_value}". Error: {str(e)}'
-                    print(msg)
-                    errors.append(msg)
-                    error_filenames.add(error_filename)
+            try:
+                converted = pd.to_datetime(df[col], infer_datetime_format=True, dayfirst=True, errors='coerce')
+                invalid_rows: pd.DataFrame = df[converted.isna() & df[col].notna()]
+                if not invalid_rows.empty:
+                    for idx in invalid_rows.index:
+                        error_row_num = self.get_local_row(idx, df_lens)
+                        filename = df.loc[idx, config.COL_PROJECT_NAME]
+                        val = df.loc[idx, col]
+                        msg = f'File: "{filename}" ||| Col: "{col}" ||| Row Num: "{error_row_num + 1}" ||| Row value: "{val}". Error: Invalid date'
+                        errors.append(msg)
+                        print(msg)
+                        error_filenames.add(filename)
+                df[col] = converted
+            except Exception as e:
+                errors.append(f'General failure parsing column: {col}. Error: {str(e)}')
 
         # ❌ Drop all rows with those filenames
         if error_filenames:
@@ -260,7 +266,7 @@ class KPIDataProcessor:
             errors.append(msg)
 
         if errors:
-            print('\nSome errors occurred during pre-processing:\n' + str(errors))
+            print('\nSome errors occurred during pre-processing:\n' + '\n'.join(errors))
 
         return df, errors
 
