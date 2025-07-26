@@ -1,9 +1,10 @@
 from pandas import DataFrame
+
 import config
 import utils
 
-
 # Summary of Retouchers - All projects combined
+
 
 def calc_retouches(df: DataFrame) -> tuple[int, int, int]:
     """
@@ -54,7 +55,7 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_dat
 
     df_date_filtered: DataFrame = df.copy()
 
-    if include_overall == 'n':
+    if include_overall == "n":
         # don't include the overall dates, rather use the start and end date provided by
         # user in the KP_invoivce cells
         temp_df_date1_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_DATE_DONE_RETOUCHERS_SIGN_1)
@@ -63,11 +64,18 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_dat
         temp_df_date4_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_DATE_DONE_RETOUCHERS_SIGN_4)
         temp_df_date5_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_DATE_DONE_RETOUCHERS_SIGN_5)
 
-        df_date_filtered = utils.concat_dfs([temp_df_date1_filtered, temp_df_date2_filtered, temp_df_date3_filtered,
-                                             temp_df_date4_filtered, temp_df_date5_filtered])
+        df_date_filtered = utils.concat_dfs(
+            [
+                temp_df_date1_filtered,
+                temp_df_date2_filtered,
+                temp_df_date3_filtered,
+                temp_df_date4_filtered,
+                temp_df_date5_filtered,
+            ]
+        )
         df_date_filtered.reset_index(drop=True, inplace=True)
 
-    cols = ['Retoucher', 'Transfer', 'Retouches', 'Variance', '#_projects_worked']
+    cols = ["Retoucher", "Transfer", "Retouches", "Variance", "#_projects_worked"]
     df_retouchers_signed = utils.get_empty_df(cols)
 
     all_retoucher_names = get_all_retoucher_names(df_date_filtered)
@@ -89,7 +97,9 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_dat
         project_names_r4 = utils.df_column_to_uniques_list(r3_df, config.COL_PROJECT_NAME)
         project_names_r5 = utils.df_column_to_uniques_list(r3_df, config.COL_PROJECT_NAME)
 
-        all_projects_worked = len(set(project_names_r1 + project_names_r2 + project_names_r3 + project_names_r4 + project_names_r5))
+        all_projects_worked = len(
+            set(project_names_r1 + project_names_r2 + project_names_r3 + project_names_r4 + project_names_r5)
+        )
 
         transfer, retouches, variance = 0, 0, 0
 
@@ -101,18 +111,19 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_dat
 
         df_retouchers_signed.loc[len(df_retouchers_signed)] = [r_name, transfer, retouches, variance, all_projects_worked]
 
-    df_retouchers_signed.set_index('Retoucher', inplace=True)
+    df_retouchers_signed.set_index("Retoucher", inplace=True)
 
     return df_retouchers_signed
 
 
-#--------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
 
 # Summary of Retouchers - Project wise
 
+
 def summary_of_retouchers_project_wise(df, start_date, end_date):
 
-    cols = ['start_date', 'end_date', 'Retoucher', 'Project_name', 'Transfer', 'Retouches', 'Variance', 'Review']
+    cols = ["start_date", "end_date", "Retoucher", "Project_name", "Transfer", "Retouches", "Variance", "Review"]
     df_retouchers_signed_project_wise = utils.get_empty_df(cols)
 
     all_retoucher_names = get_all_retoucher_names(df)
@@ -149,20 +160,41 @@ def summary_of_retouchers_project_wise(df, start_date, end_date):
 
             transfer, retouches, variance = 0, 0, 0
 
-            for temp_df in [r1_project_filtered_df, r2_project_filtered_df, r3_project_filtered_df, r4_project_filtered_df, r5_project_filtered_df]:
+            for temp_df in [
+                r1_project_filtered_df,
+                r2_project_filtered_df,
+                r3_project_filtered_df,
+                r4_project_filtered_df,
+                r5_project_filtered_df,
+            ]:
                 transfer1, retouches1, variance1 = calc_retouches(temp_df)
                 transfer += transfer1
                 retouches += retouches1
                 variance += variance1
 
-            temp_concat_df: DataFrame = utils.concat_dfs([r1_project_filtered_df, r2_project_filtered_df, r3_project_filtered_df, r4_project_filtered_df, r5_project_filtered_df])
+            temp_concat_df: DataFrame = utils.concat_dfs(
+                [
+                    r1_project_filtered_df,
+                    r2_project_filtered_df,
+                    r3_project_filtered_df,
+                    r4_project_filtered_df,
+                    r5_project_filtered_df,
+                ]
+            )
             review = temp_concat_df[config.COL_WARNINGS].str.contains(config.REVIEW_RETOUCHER).any()
-            review = 'Investigate' if (review == True) else ''
+            review = "Investigate" if (review == True) else ""
 
-            df_retouchers_signed_project_wise.loc[len(df_retouchers_signed_project_wise)] = [start_date, end_date, r_name,
-                                                                                             project_name, transfer, retouches,
-                                                                                             variance, review]
+            df_retouchers_signed_project_wise.loc[len(df_retouchers_signed_project_wise)] = [
+                start_date,
+                end_date,
+                r_name,
+                project_name,
+                transfer,
+                retouches,
+                variance,
+                review,
+            ]
 
-    df_retouchers_signed_project_wise.set_index('Retoucher', inplace=True)
+    df_retouchers_signed_project_wise.set_index("Retoucher", inplace=True)
 
     return df_retouchers_signed_project_wise

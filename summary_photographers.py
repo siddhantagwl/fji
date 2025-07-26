@@ -1,7 +1,8 @@
 # Summary of Photographers - All projects
+from pandas import DataFrame
+
 import config
 import utils
-from pandas import DataFrame
 
 
 def calc_photographers(df: DataFrame) -> tuple[int, int]:
@@ -38,23 +39,22 @@ def get_all_photographer_names(df: DataFrame):
     p3_sign_names = utils.df_column_to_uniques_list(df, config.COL_PHOTOGRAPHER_3)
 
     all_photographer_names = p1_sign_names + p2_sign_names + p3_sign_names
-    all_photographer_names = list(dict.fromkeys(all_photographer_names)) # dropping duplicates while maintaining order
+    all_photographer_names = list(dict.fromkeys(all_photographer_names))  # dropping duplicates while maintaining order
     all_photographer_names = utils.remove_empty_str_values(all_photographer_names)
 
     return all_photographer_names
 
 
-
 def summary_of_photographers_all_projects(df: DataFrame, include_overall, start_date, end_date):
 
-    cols = ['Photographer', 'Items', 'Images', '-', '#_projects_worked']
+    cols = ["Photographer", "Items", "Images", "-", "#_projects_worked"]
     df_photographers = utils.get_empty_df(cols)
 
     # making an initial copy, if no dates have to be included, this df_filtered
     # can be used to maintain code consistency
     df_date_filtered = df.copy()
 
-    if include_overall == 'n':
+    if include_overall == "n":
         # don't include the overall dates, rather use the start and end date provided by
         # user in the KP_invoivce cells
         df_date_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOGRAPHER_DATE)
@@ -75,7 +75,7 @@ def summary_of_photographers_all_projects(df: DataFrame, include_overall, start_
         project_names_p3 = p3_df[config.COL_PROJECT_NAME].unique().tolist()
 
         all_projects_worked = len(set(project_names_p1 + project_names_p2 + project_names_p3))
-        #all_projects_worked = str(len(all_projects_worked)) + '-> ' + ' || '.join(all_projects_worked)
+        # all_projects_worked = str(len(all_projects_worked)) + '-> ' + ' || '.join(all_projects_worked)
 
         items1, images1 = calc_photographers(p1_df)
         items2, images2 = calc_photographers(p2_df)
@@ -84,20 +84,22 @@ def summary_of_photographers_all_projects(df: DataFrame, include_overall, start_
         items = items1 + items2 + items3
         images = images1 + images2 + images3
 
-        df_photographers.loc[len(df_photographers)] = [p_name, items, images, '' , all_projects_worked]
+        df_photographers.loc[len(df_photographers)] = [p_name, items, images, "", all_projects_worked]
 
-    df_photographers.set_index('Photographer', inplace=True)
+    df_photographers.set_index("Photographer", inplace=True)
 
     return df_photographers
 
-#--------------------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------------
 
 # Summary of Photographers - Project Wise
+
 
 def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
 
     # make an empty output Dataframe
-    cols = ['start_date', 'end_date', 'Photographer', 'Project_name', 'Items', 'Images']
+    cols = ["start_date", "end_date", "Photographer", "Project_name", "Items", "Images"]
     df_photographers_project_wise = utils.get_empty_df(cols)
 
     df_date_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOGRAPHER_DATE)
@@ -112,7 +114,6 @@ def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
         p1_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_1, p_name)
         p2_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_2, p_name)
         p3_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_3, p_name)
-
 
         concat_df = utils.concat_dfs([p1_df, p2_df, p3_df])
 
@@ -135,10 +136,15 @@ def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
             photographer_images = photographer_images_1 + photographer_images_2 + photographer_images_3
 
             # add the result to the output dataframe
-            df_photographers_project_wise.loc[len(df_photographers_project_wise)] = [start_date, end_date,
-                                                                                     p_name, project_name,
-                                                                                     photographer_items, photographer_images]
+            df_photographers_project_wise.loc[len(df_photographers_project_wise)] = [
+                start_date,
+                end_date,
+                p_name,
+                project_name,
+                photographer_items,
+                photographer_images,
+            ]
 
-    df_photographers_project_wise.set_index('Photographer', inplace=True)
+    df_photographers_project_wise.set_index("Photographer", inplace=True)
 
     return df_photographers_project_wise

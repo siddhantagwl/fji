@@ -1,9 +1,7 @@
 import utils
-
 from summary_photographers import summary_of_photographers_project_wise
 from summary_photostackers import summary_of_photostackers_project_wise
 from summary_retouchers import summary_of_retouchers_project_wise
-
 
 
 def modify_date_cols_to_month_year(df_staff_exp_KPI):
@@ -12,9 +10,9 @@ def modify_date_cols_to_month_year(df_staff_exp_KPI):
 
     for col in df_staff_exp_KPI.columns:
 
-        if col not in ['Names', 'Active', 'Category 1', 'Category 2', 'Category 3', 'Category 4']:
+        if col not in ["Names", "Active", "Category 1", "Category 2", "Category 3", "Category 4"]:
 
-            col_date_modf = utils.convert_date_obj_to_str(col,  date_format='%b-%Y')
+            col_date_modf = utils.convert_date_obj_to_str(col, date_format="%b-%Y")
             date_modf_mapping[col] = col_date_modf
 
     df_staff_exp_KPI_modf = df_staff_exp_KPI.rename(columns=date_modf_mapping)
@@ -36,7 +34,7 @@ def calc_month_end_date(end_date_obj):
 
 def date_list(start_date_obj, end_date_obj):
 
-    date_range = utils.construct_list_of_dates(start_date_obj, end_date_obj, freq='M')
+    date_range = utils.construct_list_of_dates(start_date_obj, end_date_obj, freq="M")
 
     user_date_list = []
 
@@ -54,7 +52,7 @@ def calculate_yearly_summary_tables(df, user_date_list, ppj_dict, sub_catg_list)
 
     for user_start_date, user_end_date in user_date_list:
 
-        month_year_str = utils.convert_date_obj_to_str(user_start_date, date_format='%b-%Y')
+        month_year_str = utils.convert_date_obj_to_str(user_start_date, date_format="%b-%Y")
 
         df_photographers_yearly_summ = summary_of_photographers_project_wise(df, user_start_date, user_end_date)
         df_photographers_yearly_summ = utils.calc_KPI_from_PPJ(df_photographers_yearly_summ, ppj_dict, sub_catg_list)
@@ -80,7 +78,7 @@ def calculate_actual_KPI_val(all_catg, df_dict_yearly_summ, staff_name):
             continue
         # filter this staff_name in the df
         kpi_df = utils.filter_column_values_for_active_staff(temp_df, [staff_name])
-        actual_kpi += sum(kpi_df['KPI Points'])
+        actual_kpi += sum(kpi_df["KPI Points"])
 
     return int(actual_kpi)
 
@@ -100,17 +98,17 @@ def calculate_yearly_performance_table(yearly_summary_data, staff_and_their_cate
 
         for staff_name, all_catg in staff_and_their_categories.items():
 
-            cond = (df_staff_exp_KPI_modf['Names'] == staff_name)
+            cond = df_staff_exp_KPI_modf["Names"] == staff_name
             filtered = df_staff_exp_KPI_modf.loc[cond, month_year_str]
             # expected_kpi = df_staff_exp_KPI_modf.loc[cond, month_year_str].iloc[0]
 
             if filtered.empty:
-                expected_kpi = '-'
+                expected_kpi = "-"
                 continue
 
             expected_kpi = filtered.iloc[0]
             if not expected_kpi:
-                expected_kpi = '-'
+                expected_kpi = "-"
                 continue
 
             expected_kpi = int(expected_kpi)
@@ -119,10 +117,12 @@ def calculate_yearly_performance_table(yearly_summary_data, staff_and_their_cate
             actual_kpi = calculate_actual_KPI_val(all_catg, df_dict_yearly_summ, staff_name)
             performance_points = calc_performance_points(actual_kpi, expected_kpi)
 
-            month_year_data[month_year_str][staff_name] = f'{modify_string_for_printing(actual_kpi)}  [{expected_kpi}]  [{performance_points}]'
+            month_year_data[month_year_str][
+                staff_name
+            ] = f"{modify_string_for_printing(actual_kpi)}  [{expected_kpi}]  [{performance_points}]"
 
     df_yearly_performance = utils.get_df_from_dict(month_year_data)
-    df_yearly_performance.sort_index(inplace = True)
+    df_yearly_performance.sort_index(inplace=True)
 
     df_yearly_performance = utils.filter_index_for_active_staff(df_yearly_performance, active_staff)
 
@@ -136,8 +136,8 @@ def modify_string_for_printing(actual_kpi):
     if l < 3:
         rem_spaces = 3 - l
 
-    spaces = ' ' * rem_spaces
-    return f'{spaces}{actual_kpi}'
+    spaces = " " * rem_spaces
+    return f"{spaces}{actual_kpi}"
 
 
 def get_performance_points_chart(target_kpi):
@@ -145,10 +145,10 @@ def get_performance_points_chart(target_kpi):
     bucket_size = target_kpi // 4
 
     number_list = list(range(0, target_kpi + 1))
-    grouped_numbers = [number_list[i:i+bucket_size] for i in range(0, len(number_list), bucket_size)]
+    grouped_numbers = [number_list[i : i + bucket_size] for i in range(0, len(number_list), bucket_size)]
 
     # add a point for 0
-    point_chart = {(0, 0):0}
+    point_chart = {(0, 0): 0}
 
     # start with point value 1
     points = 1
@@ -187,13 +187,13 @@ def calc_performance_points(actual_kpi, target_kpi):
 def make_points_reference_chart(expected_kpi_set):
     expected_kpi_points_table = {k: get_performance_points_chart(k) for k in expected_kpi_set}
 
-    cols = ['target_kpi', 0, 1, 2, 3, 4, 5]
+    cols = ["target_kpi", 0, 1, 2, 3, 4, 5]
     df_points_chart = utils.get_empty_df(cols)
 
     for exp_kpi, points_chart in expected_kpi_points_table.items():
         df_points_chart.loc[len(df_points_chart)] = [exp_kpi] + list(points_chart.keys())
 
-    df_points_chart = df_points_chart.set_index('target_kpi').sort_index()
+    df_points_chart = df_points_chart.set_index("target_kpi").sort_index()
     df_points_chart.index.name = "target_kpi ↓ \ Points →"
 
     return df_points_chart
@@ -204,31 +204,27 @@ def write_yearly_performance_sheet(writer, wb, yearly_performance_sheet, df, df_
     ws = wb.add_worksheet(yearly_performance_sheet)
     writer.sheets[yearly_performance_sheet] = ws
 
-    ws.write(0, 0, 'Yearly Performance Rating')
-    ws.write(1, 0, 'Start Date')
-    ws.write(2, 0, 'End Date')
-    ws.write(3, 0, 'Note:')
-    ws.write(4, 0, 'Legend:')
+    ws.write(0, 0, "Yearly Performance Rating")
+    ws.write(1, 0, "Start Date")
+    ws.write(2, 0, "End Date")
+    ws.write(3, 0, "Note:")
+    ws.write(4, 0, "Legend:")
 
-    ws.write(1, 1, utils.convert_date_obj_to_str(start_date, date_format='%b-%Y'))
-    ws.write(2, 1, utils.convert_date_obj_to_str(end_date, date_format='%b-%Y'))
-    ws.write(3, 1, 'This is the yearly performance result, including KPI results')
-    ws.write(4, 1, '300 [300] [1] - Actual Result [Expected Result] [Performance Rating]')
+    ws.write(1, 1, utils.convert_date_obj_to_str(start_date, date_format="%b-%Y"))
+    ws.write(2, 1, utils.convert_date_obj_to_str(end_date, date_format="%b-%Y"))
+    ws.write(3, 1, "This is the yearly performance result, including KPI results")
+    ws.write(4, 1, "300 [300] [1] - Actual Result [Expected Result] [Performance Rating]")
 
     startrow = 6
     startcol = 0
 
-    df.to_excel(writer,
-               sheet_name=yearly_performance_sheet,
-               startrow=startrow,
-               startcol=startcol, index=True)
+    df.to_excel(writer, sheet_name=yearly_performance_sheet, startrow=startrow, startcol=startcol, index=True)
 
     points_table_row = startrow + len(df) + 4
-    ws.write(points_table_row, 0, 'Points table reference:')
+    ws.write(points_table_row, 0, "Points table reference:")
 
     points_table_row += 2
-    df_points_chart.to_excel(writer,
-                             sheet_name=yearly_performance_sheet,
-                             startrow=points_table_row,
-                             startcol=startcol, index=True)
+    df_points_chart.to_excel(
+        writer, sheet_name=yearly_performance_sheet, startrow=points_table_row, startcol=startcol, index=True
+    )
     return
