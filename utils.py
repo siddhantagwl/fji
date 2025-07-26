@@ -1,18 +1,20 @@
-import config
-from pathlib import Path
-import pandas as pd
 import datetime as dt
-from calendar import monthrange
 import os
 import re
-
-
 import traceback
+from calendar import monthrange
+from pathlib import Path
+
+import pandas as pd
+
+import config
+
 
 def catch_errors(func):
     """
     A decorator to catch and log errors in the decorated function.
     """
+
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -35,7 +37,7 @@ def construct_pd_datetime_obj(year, month, day):
 
 
 def construct_list_of_dates(st_date_obj, end_date_obj, freq):
-    return pd.date_range(start = st_date_obj, end = end_date_obj, freq=freq)
+    return pd.date_range(start=st_date_obj, end=end_date_obj, freq=freq)
 
 
 def concat_dfs(df_list):
@@ -55,11 +57,11 @@ def remove_empty_str_values(arr):
 
 
 def convert_date_str_to_obj(date_string):
-    date_obj = dt.datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S').date()
+    date_obj = dt.datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S").date()
     return date_obj
 
 
-def convert_date_obj_to_str(date_obj, date_format='%Y-%m-%d'):
+def convert_date_obj_to_str(date_obj, date_format="%Y-%m-%d"):
     return dt.datetime.strftime(date_obj, date_format)
 
 
@@ -80,7 +82,7 @@ def filter_df_on_dates(df, start_date, end_date, col_name):
 
 
 def filter_df_on_retoucher_name(df, r_name, retoucher_col_name):
-    return df[(df[retoucher_col_name] == r_name) & (df['Reject Retouchers Pay'] != 'Y')]
+    return df[(df[retoucher_col_name] == r_name) & (df["Reject Retouchers Pay"] != "Y")]
 
 
 def filter_df_on_column_value(df, col_name, col_value):
@@ -103,13 +105,13 @@ def read_excel_file(excel_filepath, sheet_name=None):
         df = pd.read_excel(excel_filepath, sheet_name=sheet_name)
     except Exception as e:
         msg = f'Unable to read data from excel "{excel_filepath}" --> "{e}"'
-        print(msg, '\n')
+        print(msg, "\n")
         errors.append(msg)
     return df, errors
 
 
 def read_csv_file(csv_filepath, dayfirst=False, date_parser=None):
-    msg = ''
+    msg = ""
     df = pd.DataFrame()
     try:
         df = pd.read_csv(csv_filepath, dayfirst=dayfirst, date_parser=date_parser)
@@ -119,17 +121,25 @@ def read_csv_file(csv_filepath, dayfirst=False, date_parser=None):
     return df, msg
 
 
-from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, List, Tuple, Optional
-from time import time
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from time import time
+from typing import Callable, List, Optional, Tuple
 
-def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpected: list =None, use_threads: bool = True, show_progress: bool = True):
 
-    errors = []
-    df_lens = []
-    df_src_filenames = []
-    warnings = []
+def read_data_files(
+    file_path_list,
+    dayfirst=False,
+    date_parser=None,
+    colsExpected: list = [],
+    use_threads: bool = True,
+    show_progress: bool = True,
+):
+
+    errors: list[str] = []
+    df_lens: list[int] = []
+    df_src_filenames: list[str] = []
+    warnings: list[str] = []
     file_path_list = sorted(file_path_list)
     df_list = []
 
@@ -143,6 +153,7 @@ def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpect
 
     if show_progress:
         from tqdm import tqdm
+
         jobs = tqdm(jobs, total=len(file_path_list), desc="Reading CSV files")
 
     for i, (filename, temp_df, warn) in enumerate(jobs):
@@ -180,19 +191,19 @@ def read_data_files(file_path_list, dayfirst=False, date_parser=None, colsExpect
 
 def multiple_dfs_on_same_sheet(writer, df_list, sheet_name, spaces, row, index=True):
     for dataframe in df_list:
-        dataframe.to_excel(writer, sheet_name=sheet_name, startrow=row , startcol=0, index=index)
+        dataframe.to_excel(writer, sheet_name=sheet_name, startrow=row, startcol=0, index=index)
         row = row + len(dataframe.index) + spaces + 1
     return
 
 
 def calc_KPI_from_PPJ(df, ppj_dict, sub_catg_list):
 
-    df['KPI Points'] = 0
+    df["KPI Points"] = 0
 
     df_catg_name = df.index.name
 
     if df_catg_name not in ppj_dict:
-        df['KPI Points'] = '-'
+        df["KPI Points"] = "-"
         return df
 
     for indx, row in df.iterrows():
@@ -207,15 +218,15 @@ def calc_KPI_from_PPJ(df, ppj_dict, sub_catg_list):
 
             ppj = ppj_dict[df_catg_name][c]
             val = df.loc[indx, c]
-            kpi_sum += (val * ppj)
+            kpi_sum += val * ppj
 
-        df.loc[indx, 'KPI Points'] = kpi_sum
+        df.loc[indx, "KPI Points"] = kpi_sum
 
     return df
 
 
 def filter_index_for_active_staff(df, active_staff):
-    temp_df = df.filter(items = active_staff, axis=0)
+    temp_df = df.filter(items=active_staff, axis=0)
     return temp_df
 
 
@@ -231,8 +242,8 @@ def write_to_file(filepath, msg_list):
     msg_list_2 = [x for x in msg_list if not (x in seen)]
     msg_list_2 = [x for x in msg_list_2 if x]
 
-    msg = ';\n'.join(msg_list_2)
-    with open(filepath, 'w') as f:
+    msg = ";\n".join(msg_list_2)
+    with open(filepath, "w") as f:
         f.write(msg)
 
 
@@ -251,16 +262,16 @@ def filter_data_files(all_kpi_files):
 
     for file_path in all_kpi_files:
 
-        filename:str = os.path.basename(file_path).lower()
+        filename: str = os.path.basename(file_path).lower()
 
         # Rule 1: Skip conflicted files
-        if ("conflicted" in filename.lower()):
+        if "conflicted" in filename.lower():
             warnings.append(f"{filename}|||Skipped|||Conflicted")
             remaining_files.discard(file_path)
             continue
 
         # Rule 2: Skip JOBSHEET_* or JPLA_JOBSHEET_*
-        if (filename.startswith('jobsheet_') or filename.startswith("jpla_jobsheet")):
+        if filename.startswith("jobsheet_") or filename.startswith("jpla_jobsheet"):
             tag = "JPLA_JOBSHEET_*" if filename.startswith("jpla") else "JOBSHEET_*"
             warnings.append(f"{filename}|||Skipped|||{tag}")
             remaining_files.discard(file_path)
@@ -271,7 +282,7 @@ def filter_data_files(all_kpi_files):
     return remaining_files, warnings
 
 
-def remove_duplicate_files(remaining_files: set, warnings:list) -> list:
+def remove_duplicate_files(remaining_files: set, warnings: list) -> list:
     remaining_file_list = list(remaining_files)
 
     for base_file in remaining_file_list:
@@ -283,7 +294,7 @@ def remove_duplicate_files(remaining_files: set, warnings:list) -> list:
 
             other_name = os.path.basename(other_file)
             # Match pattern like "BaseName 3 Items.xlsx"
-            if re.match(rf'^{re.escape(base_stem)} \d+ Items\.', other_name):
+            if re.match(rf"^{re.escape(base_stem)} \d+ Items\.", other_name):
                 # Keep the newer file
                 if os.path.getmtime(base_file) > os.path.getmtime(other_file):
                     to_keep, to_remove = base_file, other_file
@@ -295,5 +306,3 @@ def remove_duplicate_files(remaining_files: set, warnings:list) -> list:
                 remaining_files.discard(to_remove)
 
     return list(remaining_files)
-
-
