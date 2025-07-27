@@ -1,3 +1,5 @@
+import pandas as pd
+import xlsxwriter
 import utils
 from summary_photographers import summary_of_photographers_project_wise
 from summary_photostackers import summary_of_photostackers_project_wise
@@ -199,7 +201,15 @@ def make_points_reference_chart(expected_kpi_set):
     return df_points_chart
 
 
-def write_yearly_performance_sheet(writer, wb, yearly_performance_sheet, df, df_points_chart, start_date, end_date):
+def write_yearly_performance_sheet(
+    writer: "pd.ExcelWriter",
+    wb: "xlsxwriter.Workbook",
+    yearly_performance_sheet: str,
+    df: pd.DataFrame,
+    df_points_chart: pd.DataFrame,
+    start_date,
+    end_date,
+):
 
     ws = wb.add_worksheet(yearly_performance_sheet)
     writer.sheets[yearly_performance_sheet] = ws

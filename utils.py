@@ -89,11 +89,11 @@ def filter_df_on_column_value(df, col_name, col_value):
     return df[df[col_name] == col_value]
 
 
-def sum_df_on_a_column(df, col_name):
+def sum_df_on_a_column(df: pd.DataFrame, col_name: str):
     return df[col_name].sum()
 
 
-def df_column_to_uniques_list(df, col_name):
+def df_column_to_uniques_list(df: pd.DataFrame, col_name: str):
     return df[col_name].unique().tolist()
 
 
@@ -189,10 +189,10 @@ def read_data_files(
     return final_df, errors, warnings, df_lens, df_src_filenames
 
 
-def multiple_dfs_on_same_sheet(writer, df_list, sheet_name, spaces, row, index=True):
-    for dataframe in df_list:
-        dataframe.to_excel(writer, sheet_name=sheet_name, startrow=row, startcol=0, index=index)
-        row = row + len(dataframe.index) + spaces + 1
+def multiple_dfs_on_same_sheet(writer, df_list: list[pd.DataFrame], sheet_name: str, spaces: int, row: int, index: bool = True):
+    for df in df_list:
+        df.to_excel(writer, sheet_name=sheet_name, startrow=row, startcol=0, index=index)
+        row = row + len(df.index) + spaces + 1
     return
 
 
@@ -230,7 +230,7 @@ def filter_index_for_active_staff(df, active_staff):
     return temp_df
 
 
-def filter_column_values_for_active_staff(df, active_staff):
+def filter_column_values_for_active_staff(df: pd.DataFrame, active_staff: list) -> pd.DataFrame:
     col_name = df.index.name
     temp_df = df.reset_index()
     temp_df = temp_df[temp_df[col_name].isin(active_staff)].set_index(col_name)
