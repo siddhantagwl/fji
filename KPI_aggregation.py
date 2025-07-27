@@ -571,6 +571,21 @@ class KPIDataProcessor:
         if df_file_tag_and_jobsheet_version is not None:
             df_file_tag_and_jobsheet_version.to_excel(writer, sheet_name="filetag_jobsheet_ver_analys", index=False)
 
+        df_month_wise_list = [
+            summary_data["monthly_data"]["photographers_items"],
+            summary_data["monthly_data"]["photostackers_rename"],
+            summary_data["monthly_data"]["photostackers_adjust"],
+            summary_data["monthly_data"]["photostackers_photostack"],
+            summary_data["monthly_data"]["retouchers_transfer"],
+            summary_data["monthly_data"]["retouchers_retouched"],
+            summary_data["monthly_data"]["retouchers_variance"],
+        ]
+        df_table_rows_map_month_wise = self._write_month_wise_tables(
+            writer, workbook, df_month_wise_list, df_output_sheets.iloc[-1, 0]
+        )
+        # Write table rows map
+        df_table_rows_map_month_wise.to_excel(writer, sheet_name="table_rows_map_month_wise", index=False)
+
         writer.close()
         return excel_filepath
 
@@ -614,6 +629,46 @@ class KPIDataProcessor:
             r += len(temp_df) + 2
 
         utils.multiple_dfs_on_same_sheet(writer, df_list, summary_sheet, spaces=1, row=config.START_ROW_EXCEL_OUTPUT)
+
+        return df_table_rows_map
+
+    def _write_month_wise_tables(self, writer, workbook, df_list: list[pd.DataFrame], sheetName: str):
+        """Write month-wise tables"""
+        # index name: category name
+        category_map = {
+            "Items": "Photographers",
+            "Rename": "Photostackers",
+            "Adjust": "Photostackers",
+            "Photostack": "Photostackers",
+            "Transfer": "Retouchers",
+            "Retouches": "Retouchers",
+            "Variance": "Retouchers",
+        }
+
+        worksheet = workbook.add_worksheet(sheetName)
+        writer.sheets[sheetName] = worksheet
+
+        worksheet.write(0, 0, "Month Wise Summary for all Photographers, Photostackers and Retouchers")
+
+        start_row = config.START_ROW_EXCEL_OUTPUT
+        start_col = config.START_COL_EXCEL_OUTPUT
+
+        df_table_rows_map = pd.DataFrame(columns=["table_name", "start", "end", "category"])
+
+        for df in df_list:
+            # Write headers
+            category = category_map[df.index.name]
+            worksheet.write(start_row, start_col, category)
+            row = start_row + 1
+            df.to_excel(
+                writer,
+                sheet_name=sheetName,
+                startrow=row,
+                startcol=start_col,
+                index=True,
+            )
+            df_table_rows_map.loc[len(df_table_rows_map)] = [df.index.name, row + 1, row + 1 + len(df), category]
+            start_row += len(df) + 1 + 3  # +2 for header and +1 for empty row
 
         return df_table_rows_map
 
