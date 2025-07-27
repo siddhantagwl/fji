@@ -459,21 +459,22 @@ class KPIDataProcessor:
 
     def filter_for_active_staff(self, summary_data: dict, active_staff: List[str]) -> dict:
         """Filter data for active staff only"""
+        print("Filtering summary data for active staff ...\n")
         # Filter index for active staff
-        summary_data["photographers"] = utils.filter_index_for_active_staff(summary_data["photographers"], active_staff)
-        summary_data["photostackers"] = utils.filter_index_for_active_staff(summary_data["photostackers"], active_staff)
-        summary_data["retouchers"] = utils.filter_index_for_active_staff(summary_data["retouchers"], active_staff)
+        for key in ["photographers", "photostackers", "retouchers"]:
+            summary_data[key] = utils.filter_index_for_active_staff(summary_data[key], active_staff)
 
-        # Filter column values for active staff
-        summary_data["photographers_project_wise"] = utils.filter_column_values_for_active_staff(
-            summary_data["photographers_project_wise"], active_staff
-        )
-        summary_data["photostackers_project_wise"] = utils.filter_column_values_for_active_staff(
-            summary_data["photostackers_project_wise"], active_staff
-        )
-        summary_data["retouchers_project_wise"] = utils.filter_column_values_for_active_staff(
-            summary_data["retouchers_project_wise"], active_staff
-        )
+            # Filter column values for active staff
+            project_wise_key = f"{key}_project_wise"
+            summary_data[project_wise_key] = utils.filter_column_values_for_active_staff(
+                summary_data[project_wise_key], active_staff
+            )
+
+        # Filter monthly data for active staff
+        for key in summary_data["monthly_data"].keys():
+            summary_data["monthly_data"][key] = utils.filter_index_for_active_staff(
+                summary_data["monthly_data"][key], active_staff
+            )
 
         return summary_data
 
