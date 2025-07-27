@@ -347,33 +347,54 @@ class KPIDataProcessor:
 
     def generate_summary_reports(self, df: pd.DataFrame, include_overall: str, date_ranges: dict) -> dict:
         """Generate all summary reports for photographers, photostackers, and retouchers"""
-        from summary_photographers import summary_of_photographers_all_projects, summary_of_photographers_project_wise
-        from summary_photostackers import summary_of_photostackers_all_projects, summary_of_photostackers_project_wise
-        from summary_retouchers import summary_of_retouchers_all_projects, summary_of_retouchers_project_wise
+        from summary_photographers import (
+            summary_of_photographers_all_projects,
+            summary_of_photographers_project_wise,
+            summary_of_photographers_by_month,
+        )
+        from summary_photostackers import (
+            summary_of_photostackers_all_projects,
+            summary_of_photostackers_project_wise,
+            summary_of_photostackers_by_month,
+        )
+        from summary_retouchers import (
+            summary_of_retouchers_all_projects,
+            summary_of_retouchers_project_wise,
+            summary_of_retouchers_by_month,
+        )
         from summary_photography import summary_of_photography_project_wise
 
         # Generate summaries for all roles
         df_photographers = summary_of_photographers_all_projects(
-            df, include_overall, date_ranges["start_date"], date_ranges["end_date"]
+            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
         )
         df_photographers_project_wise = summary_of_photographers_project_wise(
-            df, date_ranges["start_date"], date_ranges["end_date"]
+            df.copy(), date_ranges["start_date"], date_ranges["end_date"]
         )
+        df_photographers_by_month_items = summary_of_photographers_by_month(df.copy())
 
         df_photostackers = summary_of_photostackers_all_projects(
-            df, include_overall, date_ranges["start_date"], date_ranges["end_date"]
+            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
         )
         df_photostackers_project_wise = summary_of_photostackers_project_wise(
-            df, date_ranges["start_date"], date_ranges["end_date"]
+            df.copy(), date_ranges["start_date"], date_ranges["end_date"]
+        )
+        df_photostackers_by_month_rename, df_photostackers_by_month_adjust, df_photostackers_by_month_photostack = (
+            summary_of_photostackers_by_month(df.copy())
         )
 
         df_retouchers = summary_of_retouchers_all_projects(
-            df, include_overall, date_ranges["start_date"], date_ranges["end_date"]
+            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
         )
-        df_retouchers_project_wise = summary_of_retouchers_project_wise(df, date_ranges["start_date"], date_ranges["end_date"])
+        df_retouchers_project_wise = summary_of_retouchers_project_wise(
+            df.copy(), date_ranges["start_date"], date_ranges["end_date"]
+        )
+        df_retouchers_by_month_transfer, df_retouchers_by_month_retouched, df_retouchers_by_month_variance = (
+            summary_of_retouchers_by_month(df.copy())
+        )
 
         # Photography summary = How many items and images on each Photographer date
-        df_photography_summary_project_wise = summary_of_photography_project_wise(df)
+        df_photography_summary_project_wise = summary_of_photography_project_wise(df.copy())
         df_photography_summary = (
             df_photography_summary_project_wise.groupby("Photography_date")
             .agg({"Items": "sum", "Images": "sum", "Project_name": "count"})
@@ -391,6 +412,15 @@ class KPIDataProcessor:
             "retouchers_project_wise": df_retouchers_project_wise,
             "photography_summary": df_photography_summary,
             "photography_summary_project_wise": df_photography_summary_project_wise,
+            "monthly_data": {
+                "photographers_items": df_photographers_by_month_items,
+                "photostackers_rename": df_photostackers_by_month_rename,
+                "photostackers_adjust": df_photostackers_by_month_adjust,
+                "photostackers_photostack": df_photostackers_by_month_photostack,
+                "retouchers_transfer": df_retouchers_by_month_transfer,
+                "retouchers_retouched": df_retouchers_by_month_retouched,
+                "retouchers_variance": df_retouchers_by_month_variance,
+            },
         }
 
     def calculate_kpis(self, summary_data: dict, ppj_dict: dict, sub_catg_list: List[str]) -> dict:
