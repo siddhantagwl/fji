@@ -516,7 +516,7 @@ class KPIDataProcessor:
         include_overall: str,
         df_yearly_performance: pd.DataFrame,
         df_points_chart: pd.DataFrame,
-        df_file_tag_and_jobsheet_version: pd.DataFrame,
+        df_file_tag_and_jobsheet_version: pd.DataFrame = None,  # Made optional
     ):
         """Create the final Excel output file"""
         import datetime as dt
@@ -566,8 +566,9 @@ class KPIDataProcessor:
             writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart, date_ranges
         )
 
-        # Write job sheet version analysis
-        df_file_tag_and_jobsheet_version.to_excel(writer, sheet_name="filetag_jobsheet_ver_analys", index=False)
+        # Write job sheet version analysis if provided
+        if df_file_tag_and_jobsheet_version is not None:
+            df_file_tag_and_jobsheet_version.to_excel(writer, sheet_name="filetag_jobsheet_ver_analys", index=False)
 
         writer.close()
         return excel_filepath
@@ -607,7 +608,7 @@ class KPIDataProcessor:
         df_table_rows_map = pd.DataFrame(columns=["table_name", "start", "end"])
         r = config.START_ROW_EXCEL_OUTPUT
 
-        for i, temp_df in enumerate(df_list):
+        for temp_df in df_list:
             df_table_rows_map.loc[len(df_table_rows_map)] = [temp_df.index.name, r + 1, r + 1 + len(temp_df)]
             r += len(temp_df) + 2
 
@@ -778,7 +779,7 @@ class KPIDataProcessor:
             )
 
             # Create file tag and job sheet version analysis
-            df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
+            # df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
 
             # Create Excel output
             excel_filepath = self.create_excel_output(
@@ -789,7 +790,7 @@ class KPIDataProcessor:
                 include_overall,
                 df_yearly_performance,
                 df_points_chart,
-                df_file_tag_and_jobsheet_version,
+                # df_file_tag_and_jobsheet_version,
             )
 
             end_time = round((time.time() - start_time))
@@ -814,6 +815,7 @@ class KPIDataProcessor:
 
 def main():
     """Main entry point"""
+    print("KPI Aggregation Script Started ...\n")
     processor = KPIDataProcessor()
     result = processor.process_kpi_data()
 
