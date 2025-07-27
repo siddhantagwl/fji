@@ -1,4 +1,5 @@
 from pandas import DataFrame
+import pandas as pd
 
 import config
 import utils
@@ -24,10 +25,6 @@ def get_all_photostackers_names(df):
 
 def summary_of_photostackers_all_projects(df: DataFrame, include_overall, start_date, end_date):
 
-    # making an initial copy, if no dates have to be included, this df_filtered
-    # can be used to maintain code consistency
-    df_date_filtered: DataFrame = df.copy()
-
     if include_overall == "n":
         # don't include the overall dates, rather use the start and end date provided by
         # user in the KP_invoivce cells
@@ -35,22 +32,22 @@ def summary_of_photostackers_all_projects(df: DataFrame, include_overall, start_
         temp_df_date2_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOSTACKER_DATE_2)
         # temp_df_date2_filtered = pd.DataFrame()
 
-        df_date_filtered = utils.concat_dfs([temp_df_date1_filtered, temp_df_date2_filtered])
-        df_date_filtered.reset_index(drop=True, inplace=True)
+        df = utils.concat_dfs([temp_df_date1_filtered, temp_df_date2_filtered])
+        df.reset_index(drop=True, inplace=True)
 
     # make an empty dataframe with these columns
     cols = ["Photostacker", "Rename", "Adjust", "Photostack", "#_projects_worked"]
     df_photostacker = utils.get_empty_df(cols)
 
-    all_photostacker_names = get_all_photostackers_names(df_date_filtered)
+    all_photostacker_names = get_all_photostackers_names(df)
 
     for p_name in sorted(all_photostacker_names):
 
         if (p_name == "") or (p_name == config.REDUNDANT_VALUE.lower()) or (p_name in config.UNMERGE_START_CONST_VALUES):
             continue
 
-        p1_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOSTACKER_SIGN_1, p_name)
-        p2_df = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOSTACKER_SIGN_2, p_name)
+        p1_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_1, p_name)
+        p2_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_2, p_name)
         # p2_df = pd.DataFrame()
 
         project_names_p1 = utils.df_column_to_uniques_list(p1_df, config.COL_PROJECT_NAME)
@@ -94,24 +91,6 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
         if (p_name == "") or (p_name == config.REDUNDANT_VALUE.lower()) or (p_name in config.UNMERGE_START_CONST_VALUES):
             continue
 
-        # ------------------------------
-        # phototstacker_sign_date_dict = {
-        #     config.COL_PHOTOSTACKER_SIGN_1: config.COL_PHOTOSTACKER_DATE_1,
-        #     config.COL_PHOTOSTACKER_SIGN_2: config.COL_PHOTOSTACKER_DATE_2,
-        # }
-
-        # concat_df = pd.DataFrame()
-        # p_df_filtered_output_list = []
-
-        # for sign_col, date_col in phototstacker_sign_date_dict.items():
-        #     if sign_col not in df.columns:
-        #         continue
-        #     p_df = utils.filter_df_on_column_value(df, sign_col, p_name)
-        #     p_df_filtered = utils.filter_df_on_dates(p_df, start_date, end_date, date_col)
-        #     p_df_filtered_output_list.append(p_df_filtered)
-        #     concat_df = utils.concat_dfs([concat_df, p_df])
-        # ------------------------------
-
         p1_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_1, p_name)
         p2_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_2, p_name)
 
@@ -123,12 +102,6 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
         photostacker_unique_projects = utils.df_column_to_uniques_list(concat_df, config.COL_PROJECT_NAME)
 
         for project_name in photostacker_unique_projects:
-
-            # filter on the project name
-            # project_filtered_df_concat = pd.DataFrame()
-            # for temp_df in p_df_filtered_output_list:
-            #     p_project_filtered_df = utils.filter_df_on_column_value(temp_df, config.COL_PROJECT_NAME, project_name)
-            #     project_filtered_df_concat = utils.concat_dfs([project_filtered_df_concat, p_project_filtered_df])
 
             p1_project_filtered_df = utils.filter_df_on_column_value(p1_df_filtered, config.COL_PROJECT_NAME, project_name)
             p2_project_filtered_df = utils.filter_df_on_column_value(p2_df_filtered, config.COL_PROJECT_NAME, project_name)

@@ -1,4 +1,5 @@
 from pandas import DataFrame
+import pandas as pd
 
 import config
 import utils

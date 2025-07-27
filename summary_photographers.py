@@ -1,5 +1,6 @@
 # Summary of Photographers - All projects
 from pandas import DataFrame
+import pandas as pd
 
 import config
 import utils
@@ -55,25 +56,21 @@ def summary_of_photographers_all_projects(df: DataFrame, include_overall, start_
     cols = ["Photographer", "Items", "Images", "-", "#_projects_worked"]
     df_photographers = utils.get_empty_df(cols)
 
-    # making an initial copy, if no dates have to be included, this df_filtered
-    # can be used to maintain code consistency
-    df_date_filtered = df.copy()
-
     if include_overall == "n":
         # don't include the overall dates, rather use the start and end date provided by
         # user in the KP_invoivce cells
-        df_date_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOGRAPHER_DATE)
+        df = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOGRAPHER_DATE)
 
-    all_photographer_names = get_all_photographer_names(df_date_filtered)
+    all_photographer_names = get_all_photographer_names(df)
 
     for p_name in all_photographer_names:
 
         if (p_name == "") or (p_name in config.UNMERGE_START_CONST_VALUES):
             continue
 
-        p1_df: DataFrame = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_1, p_name)
-        p2_df: DataFrame = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_2, p_name)
-        p3_df: DataFrame = utils.filter_df_on_column_value(df_date_filtered, config.COL_PHOTOGRAPHER_3, p_name)
+        p1_df: DataFrame = utils.filter_df_on_column_value(df, config.COL_PHOTOGRAPHER_1, p_name)
+        p2_df: DataFrame = utils.filter_df_on_column_value(df, config.COL_PHOTOGRAPHER_2, p_name)
+        p3_df: DataFrame = utils.filter_df_on_column_value(df, config.COL_PHOTOGRAPHER_3, p_name)
 
         project_names_p1 = p1_df[config.COL_PROJECT_NAME].unique().tolist()
         project_names_p2 = p2_df[config.COL_PROJECT_NAME].unique().tolist()
