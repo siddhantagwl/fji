@@ -131,3 +131,43 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
     df_photostacker_project_wise.set_index("Photostacker", inplace=True)
 
     return df_photostacker_project_wise
+
+
+def summary_of_photostackers_by_month(df: DataFrame) -> tuple[DataFrame, DataFrame, DataFrame]:
+    print("Generating month-wise summary for photostackers...")
+
+    # Convert dates to datetime and prepare month col (using DATE_1 only)
+    # df_filtered[config.COL_PHOTOSTACKER_DATE_1] = pd.to_datetime(df_filtered[config.COL_PHOTOSTACKER_DATE_1], errors="coerce")
+    df["month"] = df[config.COL_PHOTOSTACKER_DATE_1].dt.strftime("%b-%Y")
+
+    all_months = sorted(df["month"].dropna().unique(), key=lambda x: pd.to_datetime("01-" + x))
+
+    raw_photostackers = get_all_photostackers_names(df)
+    all_photostackers = [
+        name for name in raw_photostackers if name not in config.UNMERGE_START_CONST_VALUES and name != config.REDUNDANT_VALUE
+    ]
+
+    # Prepare result tables
+    df_rename = pd.DataFrame(0, index=all_photostackers, columns=all_months)
+    df_adjust = pd.DataFrame(0, index=all_photostackers, columns=all_months)
+    df_photostack = pd.DataFrame(0, index=all_photostackers, columns=all_months)
+
+    for p_name in all_photostackers:
+        for month in all_months:
+            # Filter only rows for the given month
+            month_df = df[df["month"] == month]
+
+            # Combine both signature columns for that name
+            p1_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOSTACKER_SIGN_1, p_name)
+            p2_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOSTACKER_SIGN_2, p_name)
+            combined_df = pd.concat([p1_df, p2_df], ignore_index=True)
+
+            df_rename.loc[p_name, month] = utils.sum_df_on_a_column(combined_df, config.COL_RENAME)
+            df_adjust.loc[p_name, month] = utils.sum_df_on_a_column(combined_df, config.COL_ADJUST)
+            df_photostack.loc[p_name, month] = utils.sum_df_on_a_column(combined_df, config.COL_PHOTOSTACK)
+
+    df_rename.index.name = "Rename"
+    df_adjust.index.name = "Adjust"
+    df_photostack.index.name = "Photostack"
+
+    return df_rename, df_adjust, df_photostack

@@ -150,3 +150,42 @@ def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
     df_photographers_project_wise.set_index("Photographer", inplace=True)
 
     return df_photographers_project_wise
+
+
+def summary_of_photographers_by_month(df: pd.DataFrame):
+    # Filter by Photographer Date
+    print("Generating month-wise summary for photographers...")
+
+    # Convert date to datetime if not already
+    # df_filtered[config.COL_PHOTOGRAPHER_DATE] = pd.to_datetime(df_filtered[config.COL_PHOTOGRAPHER_DATE], errors='coerce')
+    df["month"] = df[config.COL_PHOTOGRAPHER_DATE].dt.strftime("%b-%Y")
+
+    # Get all valid photographer names
+    raw_photographers = get_all_photographer_names(df)
+    all_photographers = [name for name in raw_photographers if name and name.lower() not in config.UNMERGE_START_CONST_VALUES]
+
+    all_months = sorted(df["month"].dropna().unique(), key=lambda x: pd.to_datetime("01-" + x))
+
+    # Build items count by month
+    result = pd.DataFrame(0, index=all_photographers, columns=all_months)
+
+    for p_name in all_photographers:
+        for month in all_months:
+            # Filter for that month only
+            month_df = df[df["month"] == month]
+
+            # Filter for this photographer in all 3 columns
+            p1_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOGRAPHER_1, p_name)
+            p2_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOGRAPHER_2, p_name)
+            p3_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOGRAPHER_3, p_name)
+
+            # Use existing logic to calculate items
+            items1, _ = calc_photographers(p1_df)
+            items2, _ = calc_photographers(p2_df)
+            items3, _ = calc_photographers(p3_df)
+
+            total_items = items1 + items2 + items3
+            result.loc[p_name, month] = total_items
+
+    result.index.name = "Items"
+    return result

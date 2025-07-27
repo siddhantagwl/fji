@@ -201,3 +201,57 @@ def summary_of_retouchers_project_wise(df, start_date, end_date):
     df_retouchers_signed_project_wise.set_index("Retoucher", inplace=True)
 
     return df_retouchers_signed_project_wise
+
+
+# --------------------------------------------------------------------------------------------------
+
+
+def summary_of_retouchers_by_month(df: DataFrame) -> tuple[DataFrame, DataFrame, DataFrame]:
+    print("Generating month-wise summary for retouchers...")
+
+    # Use DATE_1 column to generate month (for grouping)
+    # df_filtered[config.COL_DATE_DONE_RETOUCHERS_SIGN_1] = pd.to_datetime(df_filtered[config.COL_DATE_DONE_RETOUCHERS_SIGN_1], errors='coerce')
+    df["month"] = df[config.COL_DATE_DONE_RETOUCHERS_SIGN_1].dt.strftime("%b-%Y")
+
+    # Sort month values
+    all_months = sorted(df["month"].dropna().unique(), key=lambda x: pd.to_datetime("01-" + x))
+
+    raw_retouchers = get_all_retoucher_names(df)
+    all_retouchers = [
+        name.strip()
+        for name in raw_retouchers
+        if name and name.strip() not in [config.TO_DUPLICATE_VAL.lower(), config.REDUNDANT_VALUE.lower()]
+    ]
+
+    # Init result tables
+    df_transfer = pd.DataFrame(0, index=all_retouchers, columns=all_months)
+    df_retouches = pd.DataFrame(0, index=all_retouchers, columns=all_months)
+    df_variance = pd.DataFrame(0, index=all_retouchers, columns=all_months)
+
+    for r_name in all_retouchers:
+        for month in all_months:
+            # Filter month first
+            month_df = df[df["month"] == month]
+
+            # Get all 5 retoucher signature matches for this name
+            r1_df = utils.filter_df_on_retoucher_name(month_df, r_name, config.COL_RETOUCHERS_SIGN_1)
+            r2_df = utils.filter_df_on_retoucher_name(month_df, r_name, config.COL_RETOUCHERS_SIGN_2)
+            r3_df = utils.filter_df_on_retoucher_name(month_df, r_name, config.COL_RETOUCHERS_SIGN_3)
+            r4_df = utils.filter_df_on_retoucher_name(month_df, r_name, config.COL_RETOUCHERS_SIGN_4)
+            r5_df = utils.filter_df_on_retoucher_name(month_df, r_name, config.COL_RETOUCHERS_SIGN_5)
+
+            combined_df = pd.concat([r1_df, r2_df, r3_df, r4_df, r5_df], ignore_index=True)
+
+            # Calculate using your calc function
+            transfer, retouches, variance = calc_retouches(combined_df)
+
+            df_transfer.loc[r_name, month] = transfer
+            df_retouches.loc[r_name, month] = retouches
+            df_variance.loc[r_name, month] = variance
+
+    # Set clear, unique index names
+    df_transfer.index.name = "Transfer"
+    df_retouches.index.name = "Retouches"
+    df_variance.index.name = "Variance"
+
+    return df_transfer, df_retouches, df_variance
