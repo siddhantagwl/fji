@@ -39,7 +39,12 @@ def get_all_photographer_names(df: DataFrame):
     p3_sign_names = utils.df_column_to_uniques_list(df, config.COL_PHOTOGRAPHER_3)
 
     all_photographer_names = p1_sign_names + p2_sign_names + p3_sign_names
-    all_photographer_names = list(dict.fromkeys(all_photographer_names))  # dropping duplicates while maintaining order
+
+    # Normalize: strip leading/trailing whitespace
+    all_photographer_names = [name.strip().lower() for name in all_photographer_names if isinstance(name, str)]
+
+    # dropping duplicates while maintaining order
+    all_photographer_names = list(dict.fromkeys(all_photographer_names))
     all_photographer_names = utils.remove_empty_str_values(all_photographer_names)
 
     return all_photographer_names

@@ -11,6 +11,10 @@ def get_all_photostackers_names(df):
     # p2_sign_names = []
 
     all_photostacker_names = p1_sign_names + p2_sign_names
+
+    # Normalize: strip leading/trailing whitespace
+    all_photostacker_names = [name.strip().lower() for name in all_photostacker_names if isinstance(name, str)]
+
     all_photostacker_names = list(dict.fromkeys(all_photostacker_names))
 
     # photostacker_names = utils.df_column_to_uniques_list(df, config.COL_PHOTOSTACKER_SIGN)

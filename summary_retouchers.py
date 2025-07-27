@@ -46,6 +46,8 @@ def get_all_retoucher_names(df):
     r5_sign_names = utils.df_column_to_uniques_list(df, config.COL_RETOUCHERS_SIGN_5)
 
     all_retoucher_names = r1_sign_names + r2_sign_names + r3_sign_names + r4_sign_names + r5_sign_names
+    all_retoucher_names = [name.strip().lower() for name in all_retoucher_names if isinstance(name, str)]
+
     all_retoucher_names = list(dict.fromkeys(all_retoucher_names))
     all_retoucher_names = utils.remove_empty_str_values(all_retoucher_names)
     return all_retoucher_names
