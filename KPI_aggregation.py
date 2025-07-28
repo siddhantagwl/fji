@@ -33,22 +33,15 @@ class KPIDataProcessor:
 
     def setup_file_paths(self):
         """Initialize file paths for errors and warnings"""
-        self.python_errors_filepath = os.path.join(
-            self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_ERRORS_FILENAME
-        )
-        self.python_warnings_filepath = os.path.join(
-            self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_WARNINGS_FILENAME
-        )
+        self.python_errors_filepath = os.path.join(self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_ERRORS_FILENAME)
+        self.python_warnings_filepath = os.path.join(self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_WARNINGS_FILENAME)
         self.datasheet_folder_path = os.path.join(self.curr_path, config.DATESHEETS_FOLDER_NAME)
         self.validate_datasheet_folder()
 
     def validate_datasheet_folder(self) -> str:
         """Validate that the datasheet folder exists"""
         if not os.path.exists(self.datasheet_folder_path):
-            msg = (
-                f"**Critical Error - Unable to find folder which contains exported files from FJI Jobsheet** "
-                f"--> {self.datasheet_folder_path}"
-            )
+            msg = f"**Critical Error - Unable to find folder which contains exported files from FJI Jobsheet** " f"--> {self.datasheet_folder_path}"
             print(msg, "\n")
             self.python_errors_list.append(msg)
             self.handle_errors()
@@ -143,9 +136,7 @@ class KPIDataProcessor:
         if not archive_kpi_files:
             return None
 
-        df_archive, errors, _, _ = utils.read_data_files(
-            archive_kpi_files, date_parser=None, colsExpected=config.COLS_TO_EXPECT_IN_CSV
-        )
+        df_archive, errors, _, _ = utils.read_data_files(archive_kpi_files, date_parser=None, colsExpected=config.COLS_TO_EXPECT_IN_CSV)
         self.python_errors_list.extend(errors)
 
         return df_archive
@@ -367,35 +358,19 @@ class KPIDataProcessor:
         # Generate summaries for all roles
 
         # --------- Photographers summary ---------
-        df_photographers = summary_of_photographers_all_projects(
-            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
-        )
-        df_photographers_project_wise = summary_of_photographers_project_wise(
-            df.copy(), date_ranges["start_date"], date_ranges["end_date"]
-        )
+        df_photographers = summary_of_photographers_all_projects(df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"])
+        df_photographers_project_wise = summary_of_photographers_project_wise(df.copy(), date_ranges["start_date"], date_ranges["end_date"])
         df_photographers_by_month_items = summary_of_photographers_by_month(df.copy())
 
         # --------- Photostackers summary ---------
-        df_photostackers = summary_of_photostackers_all_projects(
-            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
-        )
-        df_photostackers_project_wise = summary_of_photostackers_project_wise(
-            df.copy(), date_ranges["start_date"], date_ranges["end_date"]
-        )
-        df_photostackers_by_month_rename, df_photostackers_by_month_adjust, df_photostackers_by_month_photostack = (
-            summary_of_photostackers_by_month(df.copy())
-        )
+        df_photostackers = summary_of_photostackers_all_projects(df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"])
+        df_photostackers_project_wise = summary_of_photostackers_project_wise(df.copy(), date_ranges["start_date"], date_ranges["end_date"])
+        df_photostackers_by_month_rename, df_photostackers_by_month_adjust, df_photostackers_by_month_photostack = summary_of_photostackers_by_month(df.copy())
 
         # --------- Retouchers summary ---------
-        df_retouchers = summary_of_retouchers_all_projects(
-            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
-        )
-        df_retouchers_project_wise = summary_of_retouchers_project_wise(
-            df.copy(), date_ranges["start_date"], date_ranges["end_date"]
-        )
-        df_retouchers_by_month_transfer, df_retouchers_by_month_retouched, df_retouchers_by_month_variance = (
-            summary_of_retouchers_by_month(df.copy())
-        )
+        df_retouchers = summary_of_retouchers_all_projects(df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"])
+        df_retouchers_project_wise = summary_of_retouchers_project_wise(df.copy(), date_ranges["start_date"], date_ranges["end_date"])
+        df_retouchers_by_month_transfer, df_retouchers_by_month_retouched, df_retouchers_by_month_variance = summary_of_retouchers_by_month(df.copy())
 
         # --------- Photography summary ---------
         # Photography summary = How many items and images on each Photographer date
@@ -432,15 +407,9 @@ class KPIDataProcessor:
 
     def calculate_kpis(self, summary_data: dict, ppj_dict: dict, sub_catg_list: List[str]) -> dict:
         """Calculate KPIs from PPJ data"""
-        summary_data["photographers_project_wise"] = utils.calc_KPI_from_PPJ(
-            summary_data["photographers_project_wise"], ppj_dict, sub_catg_list
-        )
-        summary_data["photostackers_project_wise"] = utils.calc_KPI_from_PPJ(
-            summary_data["photostackers_project_wise"], ppj_dict, sub_catg_list
-        )
-        summary_data["retouchers_project_wise"] = utils.calc_KPI_from_PPJ(
-            summary_data["retouchers_project_wise"], ppj_dict, sub_catg_list
-        )
+        summary_data["photographers_project_wise"] = utils.calc_KPI_from_PPJ(summary_data["photographers_project_wise"], ppj_dict, sub_catg_list)
+        summary_data["photostackers_project_wise"] = utils.calc_KPI_from_PPJ(summary_data["photostackers_project_wise"], ppj_dict, sub_catg_list)
+        summary_data["retouchers_project_wise"] = utils.calc_KPI_from_PPJ(summary_data["retouchers_project_wise"], ppj_dict, sub_catg_list)
         return summary_data
 
     def add_breakdown_columns(self, summary_data: dict) -> dict:
@@ -473,15 +442,11 @@ class KPIDataProcessor:
 
             # Filter column values for active staff
             project_wise_key = f"{key}_project_wise"
-            summary_data[project_wise_key] = utils.filter_column_values_for_active_staff(
-                summary_data[project_wise_key], active_staff
-            )
+            summary_data[project_wise_key] = utils.filter_column_values_for_active_staff(summary_data[project_wise_key], active_staff)
 
         # Filter monthly data for active staff
         for key in summary_data["monthly_data"].keys():
-            summary_data["monthly_data"][key] = utils.filter_index_for_active_staff(
-                summary_data["monthly_data"][key], active_staff
-            )
+            summary_data["monthly_data"][key] = utils.filter_index_for_active_staff(summary_data["monthly_data"][key], active_staff)
 
         return summary_data
 
@@ -503,9 +468,7 @@ class KPIDataProcessor:
         user_end_date_yp_obj = yearly_performance_points.calc_month_end_date(date_ranges["yp_end_date"])
         user_date_list = yearly_performance_points.date_list(date_ranges["yp_start_date"], user_end_date_yp_obj)
 
-        yearly_summary_data = yearly_performance_points.calculate_yearly_summary_tables(
-            df, user_date_list, ppj_dict, sub_catg_list
-        )
+        yearly_summary_data = yearly_performance_points.calculate_yearly_summary_tables(df, user_date_list, ppj_dict, sub_catg_list)
 
         df_yearly_performance, expected_kpi_set = yearly_performance_points.calculate_yearly_performance_table(
             yearly_summary_data, staff_and_their_categories, df_staff_exp_kpi_modf, active_staff
@@ -570,9 +533,7 @@ class KPIDataProcessor:
         df_table_rows_map.to_excel(writer, sheet_name="table_rows_map", index=False)
 
         # Write yearly performance sheet
-        self._write_yearly_performance_sheet(
-            writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart, date_ranges
-        )
+        self._write_yearly_performance_sheet(writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart, date_ranges)
 
         # Write job sheet version analysis if provided
         if df_file_tag_and_jobsheet_version is not None:
@@ -587,9 +548,7 @@ class KPIDataProcessor:
             summary_data["monthly_data"]["retouchers_retouched"],
             summary_data["monthly_data"]["retouchers_variance"],
         ]
-        df_table_rows_map_month_wise = self._write_month_wise_tables(
-            writer, workbook, df_month_wise_list, df_output_sheets.iloc[-1, 0]
-        )
+        df_table_rows_map_month_wise = self._write_month_wise_tables(writer, workbook, df_month_wise_list, df_output_sheets.iloc[-1, 0])
         # Write table rows map
         df_table_rows_map_month_wise.to_excel(writer, sheet_name="table_rows_map_month_wise", index=False)
 
@@ -781,6 +740,8 @@ class KPIDataProcessor:
         """Main processing pipeline with complete workflow"""
         import time
 
+        start_time = time.time()
+
         try:
             # Setup
             self.cleanup_existing_logs()
@@ -830,7 +791,7 @@ class KPIDataProcessor:
 
             # Generate summary reports
             print("Generating summary reports...")
-            start_time = time.time()
+
             summary_data = self.generate_summary_reports(df, include_overall, date_ranges)
 
             # Calculate KPIs
