@@ -4,7 +4,7 @@
 import os
 import glob
 from pathlib import Path
-import datetime as dt
+import xlsxwriter
 
 import sys
 from typing import List, Optional, Tuple
@@ -365,6 +365,8 @@ class KPIDataProcessor:
         from summary_photography import summary_of_photography_project_wise
 
         # Generate summaries for all roles
+
+        # --------- Photographers summary ---------
         df_photographers = summary_of_photographers_all_projects(
             df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
         )
@@ -373,6 +375,7 @@ class KPIDataProcessor:
         )
         df_photographers_by_month_items = summary_of_photographers_by_month(df.copy())
 
+        # --------- Photostackers summary ---------
         df_photostackers = summary_of_photostackers_all_projects(
             df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
         )
@@ -383,6 +386,7 @@ class KPIDataProcessor:
             summary_of_photostackers_by_month(df.copy())
         )
 
+        # --------- Retouchers summary ---------
         df_retouchers = summary_of_retouchers_all_projects(
             df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
         )
@@ -393,8 +397,11 @@ class KPIDataProcessor:
             summary_of_retouchers_by_month(df.copy())
         )
 
+        # --------- Photography summary ---------
         # Photography summary = How many items and images on each Photographer date
-        df_photography_summary_project_wise = summary_of_photography_project_wise(df.copy())
+        df_photography_summary_project_wise: pd.DataFrame = summary_of_photography_project_wise(
+            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
+        )
         df_photography_summary = (
             df_photography_summary_project_wise.groupby("Photography_date")
             .agg({"Items": "sum", "Images": "sum", "Project_name": "count"})
@@ -673,11 +680,16 @@ class KPIDataProcessor:
         return df_table_rows_map
 
     def _write_detailed_sheets(
-        self, writer, workbook, summary_data: dict, df_output_sheets: pd.DataFrame, date_ranges: dict, df: pd.DataFrame
+        self,
+        writer,
+        workbook: "xlsxwriter.Workbook",
+        summary_data: dict,
+        df_output_sheets: pd.DataFrame,
+        date_ranges: dict,
+        df: pd.DataFrame,
     ):
         """Write detailed sheets for each data type"""
         import numbers
-        import datetime as dt
 
         unnamed_sheets = 0
         overall_kpi_start_date = min(df[config.COL_PHOTOGRAPHER_DATE])
@@ -696,6 +708,7 @@ class KPIDataProcessor:
         }
 
         for sheetname, temp_df in df_dict.items():
+            temp_df: pd.DataFrame
             # Remove start and end date columns
             cols = [col for col in temp_df.columns if col not in ["start_date", "end_date"]]
             temp_df = temp_df[cols]
@@ -706,23 +719,23 @@ class KPIDataProcessor:
                 print(f"Unnamed sheet : {sheetname}")
                 unnamed_sheets += 1
 
-            worksheet2 = workbook.add_worksheet(sheetname)
-            writer.sheets[sheetname] = worksheet2
+            worksheet = workbook.add_worksheet(sheetname)
+            writer.sheets[sheetname] = worksheet
 
             # Write sheet headers
             if sheetname in [df_output_sheets.iloc[1, 0], df_output_sheets.iloc[2, 0]]:
                 index = False
-                worksheet2.write(0, 0, "Overall Photoshoots from start to present")
-                worksheet2.write(1, 0, "Start Date:")
-                worksheet2.write(1, 1, overall_kpi_start_date_str)
+                # worksheet.write(0, 0, "Overall Photoshoots from start to present")
+                # worksheet.write(1, 0, "Start Date:")
+                # worksheet.write(1, 1, overall_kpi_start_date_str)
             else:
                 index = True
-                worksheet2.write(0, 0, "Start Date")
-                worksheet2.write(1, 0, "End Date")
-                worksheet2.write(2, 0, "Working Days")
-                worksheet2.write(0, 1, utils.convert_date_obj_to_str(date_ranges["start_date"]))
-                worksheet2.write(1, 1, utils.convert_date_obj_to_str(date_ranges["end_date"]))
-                worksheet2.write(2, 1, date_ranges["working_days"])
+            worksheet.write(0, 0, "Start Date")
+            worksheet.write(1, 0, "End Date")
+            worksheet.write(2, 0, "Working Days")
+            worksheet.write(0, 1, utils.convert_date_obj_to_str(date_ranges["start_date"]))
+            worksheet.write(1, 1, utils.convert_date_obj_to_str(date_ranges["end_date"]))
+            worksheet.write(2, 1, date_ranges["working_days"])
 
             # Write data
             temp_df.to_excel(
