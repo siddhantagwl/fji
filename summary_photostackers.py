@@ -78,7 +78,7 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
     # df_date_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOSTACKER_DATE)
     # grouped_project_wise_df = df_date_filtered.groupby([config.COL_PHOTOSTACKER_SIGN, config.COL_PROJECT_NAME])
 
-    cols = ["start_date", "end_date", "Photostacker", "Project_name", "Rename", "Adjust", "Photostack", "Review"]
+    cols = ["start_date", "end_date", "Photostacker", "Project_name", "Rename", "Adjust", "Photostack", "Review", "extracted_project_date"]
     df_photostacker_project_wise = utils.get_empty_df(cols)
 
     all_photostacker_names = get_all_photostackers_names(df)
@@ -126,8 +126,10 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
                 adjust,
                 photostack,
                 review,
+                temp_concat_df.loc[temp_concat_df[config.COL_PROJECT_NAME] == project_name, "extracted_project_date"].iloc[0]
             ]
 
+    df_photostacker_project_wise.sort_values(by=["Photostacker", "extracted_project_date"], ascending=[True, False], inplace=True)
     df_photostacker_project_wise.set_index("Photostacker", inplace=True)
 
     return df_photostacker_project_wise

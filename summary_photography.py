@@ -61,7 +61,7 @@ def summary_of_photography(df: DataFrame):
 
 def summary_of_photography_project_wise(df: DataFrame, include_overall: str, start_date, end_date) -> DataFrame:
 
-    cols = ["Photography_date", "Project_name", "Items", "Images", "Photographers", "Photostackers", "Retouchers"]
+    cols = ["Photography_date", "Project_name", "Items", "Images", "Photographers", "Photostackers", "Retouchers", "extracted_project_date"]
     df_photography_summary_project_wise = utils.get_empty_df(cols)
 
     if include_overall == "n":
@@ -119,10 +119,12 @@ def summary_of_photography_project_wise(df: DataFrame, include_overall: str, sta
             ", ".join(all_photographer_names),
             ", ".join(all_photostackers_names),
             ", ".join(all_retouchers_names),
+            df.loc[df[config.COL_PROJECT_NAME] == project_name, "extracted_project_date"].iloc[0],
         ]
 
     df_photography_summary_project_wise["Photography_date"] = utils.convert_df_col_to_date(df_photography_summary_project_wise["Photography_date"])
     df_photography_summary_project_wise["Items"] = utils.convert_df_col_to_numeric(df_photography_summary_project_wise["Items"])
     df_photography_summary_project_wise["Images"] = utils.convert_df_col_to_numeric(df_photography_summary_project_wise["Images"])
+    df_photography_summary_project_wise.sort_values(by=["Photography_date", "extracted_project_date"], ascending=[False, False], inplace=True)
 
     return df_photography_summary_project_wise

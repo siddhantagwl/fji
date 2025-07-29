@@ -101,7 +101,7 @@ def summary_of_photographers_all_projects(df: DataFrame, include_overall, start_
 def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
 
     # make an empty output Dataframe
-    cols = ["start_date", "end_date", "Photographer", "Project_name", "Items", "Images"]
+    cols = ["start_date", "end_date", "Photographer", "Project_name", "Items", "Images", "extracted_project_date"]
     df_photographers_project_wise = utils.get_empty_df(cols)
 
     df_date_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOGRAPHER_DATE)
@@ -145,8 +145,10 @@ def summary_of_photographers_project_wise(df: DataFrame, start_date, end_date):
                 project_name,
                 photographer_items,
                 photographer_images,
+                concat_df.loc[concat_df[config.COL_PROJECT_NAME] == project_name, "extracted_project_date"].iloc[0]
             ]
 
+    df_photographers_project_wise.sort_values(by=["Photographer", "extracted_project_date"], ascending=[True, False], inplace=True)
     df_photographers_project_wise.set_index("Photographer", inplace=True)
 
     return df_photographers_project_wise

@@ -191,6 +191,8 @@ def read_data_files(
 
 def multiple_dfs_on_same_sheet(writer, df_list: list[pd.DataFrame], sheet_name: str, spaces: int, row: int, index: bool = True):
     for df in df_list:
+        if "extracted_project_date" in df.columns:
+            df.drop(columns=["extracted_project_date"], inplace=True)
         df.to_excel(writer, sheet_name=sheet_name, startrow=row, startcol=0, index=index)
         row = row + len(df.index) + spaces + 1
     return

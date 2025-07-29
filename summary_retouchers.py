@@ -124,7 +124,7 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_dat
 
 def summary_of_retouchers_project_wise(df, start_date, end_date):
 
-    cols = ["start_date", "end_date", "Retoucher", "Project_name", "Transfer", "Retouches", "Variance", "Review"]
+    cols = ["start_date", "end_date", "Retoucher", "Project_name", "Transfer", "Retouches", "Variance", "Review", "extracted_project_date"]
     df_retouchers_signed_project_wise = utils.get_empty_df(cols)
 
     all_retoucher_names = get_all_retoucher_names(df)
@@ -194,8 +194,10 @@ def summary_of_retouchers_project_wise(df, start_date, end_date):
                 retouches,
                 variance,
                 review,
+                temp_concat_df.loc[temp_concat_df[config.COL_PROJECT_NAME] == project_name, "extracted_project_date"].iloc[0]
             ]
 
+    df_retouchers_signed_project_wise.sort_values(by=["Retoucher", "extracted_project_date"], ascending=[True, False], inplace=True)
     df_retouchers_signed_project_wise.set_index("Retoucher", inplace=True)
 
     return df_retouchers_signed_project_wise
