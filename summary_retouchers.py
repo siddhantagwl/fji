@@ -100,9 +100,7 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_dat
         project_names_r4 = utils.df_column_to_uniques_list(r3_df, config.COL_PROJECT_NAME)
         project_names_r5 = utils.df_column_to_uniques_list(r3_df, config.COL_PROJECT_NAME)
 
-        all_projects_worked = len(
-            set(project_names_r1 + project_names_r2 + project_names_r3 + project_names_r4 + project_names_r5)
-        )
+        all_projects_worked = len(set(project_names_r1 + project_names_r2 + project_names_r3 + project_names_r4 + project_names_r5))
 
         transfer, retouches, variance = 0, 0, 0
 
@@ -217,11 +215,7 @@ def summary_of_retouchers_by_month(df: DataFrame) -> tuple[DataFrame, DataFrame,
     all_months = sorted(df["month"].dropna().unique(), key=lambda x: pd.to_datetime("01-" + x))
 
     raw_retouchers = get_all_retoucher_names(df)
-    all_retouchers = [
-        name.strip()
-        for name in raw_retouchers
-        if name and name.strip() not in [config.TO_DUPLICATE_VAL.lower(), config.REDUNDANT_VALUE.lower()]
-    ]
+    all_retouchers = [name.strip() for name in raw_retouchers if name and name.strip() not in [config.TO_DUPLICATE_VAL.lower(), config.REDUNDANT_VALUE.lower()]]
 
     # Init result tables
     df_transfer = pd.DataFrame(0, index=all_retouchers, columns=all_months)

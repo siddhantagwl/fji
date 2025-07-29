@@ -27,9 +27,7 @@ def summary_of_photography(df: DataFrame):
             if unmerge_start_val == config.TRANSFER_VALUE:
                 continue
 
-            photographer_values = set(
-                group.loc[indx, [config.COL_PHOTOGRAPHER_1, config.COL_PHOTOGRAPHER_2, config.COL_PHOTOGRAPHER_3]].values
-            )
+            photographer_values = set(group.loc[indx, [config.COL_PHOTOGRAPHER_1, config.COL_PHOTOGRAPHER_2, config.COL_PHOTOGRAPHER_3]].values)
 
             # if all same values of NA, CV, FJI in p1,p2,p3 then skip
             if len(photographer_values) == 1 and list(photographer_values)[0] in config.PHOTOGRAPHER_SIGN_CONST_VALUES:
@@ -89,11 +87,9 @@ def summary_of_photography_project_wise(df: DataFrame, include_overall: str, sta
         #     continue
 
         # Filter out rows to skip in one go for efficiency (efficiency logic to above)
-        skip_mask = (
-            (group[config.COL_UNMERGE_START] == config.TRANSFER_VALUE)
-            | (
-                group[[config.COL_PHOTOGRAPHER_1, config.COL_PHOTOGRAPHER_2, config.COL_PHOTOGRAPHER_3]]
-                .apply(lambda x: len(set(x)) == 1 and list(set(x))[0] in config.PHOTOGRAPHER_SIGN_CONST_VALUES, axis=1)
+        skip_mask = (group[config.COL_UNMERGE_START] == config.TRANSFER_VALUE) | (
+            group[[config.COL_PHOTOGRAPHER_1, config.COL_PHOTOGRAPHER_2, config.COL_PHOTOGRAPHER_3]].apply(
+                lambda x: len(set(x)) == 1 and list(set(x))[0] in config.PHOTOGRAPHER_SIGN_CONST_VALUES, axis=1
             )
         )
         filtered_group = group[~skip_mask]
@@ -125,12 +121,8 @@ def summary_of_photography_project_wise(df: DataFrame, include_overall: str, sta
             ", ".join(all_retouchers_names),
         ]
 
-    df_photography_summary_project_wise["Photography_date"] = utils.convert_df_col_to_date(
-        df_photography_summary_project_wise["Photography_date"]
-    )
+    df_photography_summary_project_wise["Photography_date"] = utils.convert_df_col_to_date(df_photography_summary_project_wise["Photography_date"])
     df_photography_summary_project_wise["Items"] = utils.convert_df_col_to_numeric(df_photography_summary_project_wise["Items"])
-    df_photography_summary_project_wise["Images"] = utils.convert_df_col_to_numeric(
-        df_photography_summary_project_wise["Images"]
-    )
+    df_photography_summary_project_wise["Images"] = utils.convert_df_col_to_numeric(df_photography_summary_project_wise["Images"])
 
     return df_photography_summary_project_wise
