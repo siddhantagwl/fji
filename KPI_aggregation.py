@@ -231,6 +231,13 @@ class KPIDataProcessor:
             msg = "Unable to reset index."
             errors.append(msg)
 
+        try:
+            df["extracted_project_date"] = df[config.COL_PROJECT_NAME].str.extract(r"^(20\d{2}\.\d{2}\.\d{2})")
+            df["extracted_project_date"] = pd.to_datetime(df["extracted_project_date"], format="%Y.%m.%d", errors="coerce")
+        except Exception as e:
+            msg = "Unable to extract project date from project name."
+            errors.append(msg)
+
         if errors:
             print("\nSome errors occurred during pre-processing:\n" + "\n".join(errors))
 
@@ -384,6 +391,7 @@ class KPIDataProcessor:
             .rename(columns={"Project_name": "#_projects_done"})
         )
         df_photography_summary["Breakdown"] = "View"
+        df_photography_summary.sort_values(by="Photography_date", ascending=False, inplace=True)
 
         return {
             "photographers": df_photographers,
@@ -669,7 +677,7 @@ class KPIDataProcessor:
         for sheetname, temp_df in df_dict.items():
             temp_df: pd.DataFrame
             # Remove start and end date columns
-            cols = [col for col in temp_df.columns if col not in ["start_date", "end_date"]]
+            cols = [col for col in temp_df.columns if col not in ["start_date", "end_date", "extracted_project_date"]]
             temp_df = temp_df[cols]
 
             # Handle unnamed sheets
