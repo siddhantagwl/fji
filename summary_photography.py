@@ -59,12 +59,12 @@ def summary_of_photography(df: DataFrame):
     return df_photography_summary
 
 
-def summary_of_photography_project_wise(df: DataFrame, include_overall: str, start_date, end_date) -> DataFrame:
+def summary_of_photography_project_wise(df: DataFrame, include_overall: bool, start_date, end_date) -> DataFrame:
 
     cols = ["Photography_date", "Project_name", "Items", "Images", "Photographers", "Photostackers", "Retouchers", "extracted_project_date"]
     df_photography_summary_project_wise = utils.get_empty_df(cols)
 
-    if include_overall == "n":
+    if not include_overall:
         df = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOGRAPHER_DATE)
         df.reset_index(drop=True, inplace=True)
 

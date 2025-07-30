@@ -54,11 +54,11 @@ def get_all_retoucher_names(df):
     return all_retoucher_names
 
 
-def summary_of_retouchers_all_projects(df: DataFrame, include_overall, start_date, end_date):
+def summary_of_retouchers_all_projects(df: DataFrame, include_overall: bool, start_date, end_date):
 
     df_date_filtered: DataFrame = df.copy()
 
-    if include_overall == "n":
+    if not include_overall:
         # don't include the overall dates, rather use the start and end date provided by
         # user in the KP_invoivce cells
         temp_df_date1_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_DATE_DONE_RETOUCHERS_SIGN_1)
