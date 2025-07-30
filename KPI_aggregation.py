@@ -30,6 +30,13 @@ class KPIDataProcessor:
         self.python_errors_list = []
         self.python_warnings_list = []
         self.setup_file_paths()
+        self.kpi_start_date = None
+        self.kpi_end_date = None
+        self.kpi_working_days = None
+        self.yp_start_date = None
+        self.yp_end_date = None
+        self.include_archives = False
+        self.include_overall = False
 
     def setup_file_paths(self):
         """Initialize file paths for errors and warnings"""
@@ -103,15 +110,17 @@ class KPIDataProcessor:
 
         return df_staff_exp_kpi, df_catg_ppj, df_output_sheets, user_input_df
 
-    def get_processing_options(self, user_input_df: pd.DataFrame) -> Tuple[str, str]:
-        """Extract processing options from user input"""
+    def extract_include_archives_and_overall_options(self, user_input_df: pd.DataFrame) -> None:
+        """Extract processing options from user input and set class attributes"""
+        # check if 'archives' and 'overall' values are missing, if not set the value else use default
         include_archives = user_input_df["archives"].iloc[0].lower() if not pd.isna(user_input_df["archives"].iloc[0]) else "n"
         include_overall = user_input_df["overall"].iloc[0].lower() if not pd.isna(user_input_df["overall"].iloc[0]) else "n"
 
         print(f"Include Archives: {include_archives}")
         print(f"Include Overall: {include_overall}")
 
-        return include_archives, include_overall
+        self.include_archives = include_archives == "y"
+        self.include_overall = include_overall == "y"
 
     def load_main_data_files(self) -> Tuple[pd.DataFrame, List[int], List[str]]:
         """Load and process main KPI data files"""
@@ -140,7 +149,7 @@ class KPIDataProcessor:
 
         return df, df_lens, df_src_filenames
 
-    def load_archive_data(self, include_archives: str) -> Optional[pd.DataFrame]:
+    def load_archive_data(self) -> Optional[pd.DataFrame]:
         """Load archive data if requested"""
 
         print("\nReading Archives ...\n")
@@ -309,7 +318,7 @@ class KPIDataProcessor:
 
         return sub_catg_list, ppj_dict
 
-    def extract_date_ranges(self, user_input_df: pd.DataFrame) -> dict:
+    def set_date_ranges(self, user_input_df: pd.DataFrame) -> dict:
         """Extract and validate date ranges from user input"""
         user_input_df["Start Date"] = pd.to_datetime(user_input_df["Start Date"])
         user_input_df["End Date"] = pd.to_datetime(user_input_df["End Date"])
@@ -327,6 +336,12 @@ class KPIDataProcessor:
         user_end_date_yp_obj = user_input_df.iloc[1, 1]
 
         print(f"Yearly Performance rating:\n\nStart Date: {user_start_date_yp_obj}\nEnd Date: {user_end_date_yp_obj}")
+
+        self.kpi_start_date = user_start_date_obj
+        self.kpi_end_date = user_end_date_obj
+        self.kpi_working_days = working_days
+        self.yp_start_date = user_start_date_yp_obj
+        self.yp_end_date = user_end_date_yp_obj
 
         return {
             "start_date": user_start_date_obj,
@@ -356,7 +371,7 @@ class KPIDataProcessor:
 
         return df_cleaned
 
-    def generate_summary_reports(self, df: pd.DataFrame, include_overall: str, date_ranges: dict) -> dict:
+    def generate_summary_reports(self, df: pd.DataFrame) -> dict:
         """Generate all summary reports for photographers, photostackers, and retouchers"""
         from summary_photographers import (
             summary_of_photographers_all_projects,
@@ -378,24 +393,24 @@ class KPIDataProcessor:
         # Generate summaries for all roles
 
         # --------- Photographers summary ---------
-        df_photographers = summary_of_photographers_all_projects(df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"])
-        df_photographers_project_wise = summary_of_photographers_project_wise(df.copy(), date_ranges["start_date"], date_ranges["end_date"])
+        df_photographers = summary_of_photographers_all_projects(df.copy(), self.include_overall, self.kpi_start_date, self.kpi_end_date)
+        df_photographers_project_wise = summary_of_photographers_project_wise(df.copy(), self.kpi_start_date, self.kpi_end_date)
         df_photographers_by_month_items = summary_of_photographers_by_month(df.copy())
 
         # --------- Photostackers summary ---------
-        df_photostackers = summary_of_photostackers_all_projects(df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"])
-        df_photostackers_project_wise = summary_of_photostackers_project_wise(df.copy(), date_ranges["start_date"], date_ranges["end_date"])
+        df_photostackers = summary_of_photostackers_all_projects(df.copy(), self.include_overall, self.kpi_start_date, self.kpi_end_date)
+        df_photostackers_project_wise = summary_of_photostackers_project_wise(df.copy(), self.kpi_start_date, self.kpi_end_date)
         df_photostackers_by_month_rename, df_photostackers_by_month_adjust, df_photostackers_by_month_photostack = summary_of_photostackers_by_month(df.copy())
 
         # --------- Retouchers summary ---------
-        df_retouchers = summary_of_retouchers_all_projects(df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"])
-        df_retouchers_project_wise = summary_of_retouchers_project_wise(df.copy(), date_ranges["start_date"], date_ranges["end_date"])
+        df_retouchers = summary_of_retouchers_all_projects(df.copy(), self.include_overall, self.kpi_start_date, self.kpi_end_date)
+        df_retouchers_project_wise = summary_of_retouchers_project_wise(df.copy(), self.kpi_start_date, self.kpi_end_date)
         df_retouchers_by_month_transfer, df_retouchers_by_month_retouched, df_retouchers_by_month_variance = summary_of_retouchers_by_month(df.copy())
 
         # --------- Photography summary ---------
         # Photography summary = How many items and images on each Photographer date
         df_photography_summary_project_wise: pd.DataFrame = summary_of_photography_project_wise(
-            df.copy(), include_overall, date_ranges["start_date"], date_ranges["end_date"]
+            df.copy(), self.include_overall, self.kpi_start_date, self.kpi_end_date
         )
         df_photography_summary = (
             df_photography_summary_project_wise.groupby("Photography_date")
@@ -475,7 +490,6 @@ class KPIDataProcessor:
         self,
         df: pd.DataFrame,
         df_staff_exp_kpi: pd.DataFrame,
-        date_ranges: dict,
         staff_and_their_categories: dict,
         active_staff: List[str],
         ppj_dict: dict,
@@ -486,8 +500,8 @@ class KPIDataProcessor:
 
         df_staff_exp_kpi_modf = yearly_performance_points.modify_date_cols_to_month_year(df_staff_exp_kpi)
 
-        user_end_date_yp_obj = yearly_performance_points.calc_month_end_date(date_ranges["yp_end_date"])
-        user_date_list = yearly_performance_points.date_list(date_ranges["yp_start_date"], user_end_date_yp_obj)
+        user_end_date_yp_obj = yearly_performance_points.calc_month_end_date(self.yp_end_date)
+        user_date_list = yearly_performance_points.date_list(self.yp_start_date, user_end_date_yp_obj)
 
         yearly_summary_data = yearly_performance_points.calculate_yearly_summary_tables(df, user_date_list, ppj_dict, sub_catg_list)
 
@@ -504,8 +518,6 @@ class KPIDataProcessor:
         df: pd.DataFrame,
         summary_data: dict,
         df_output_sheets: pd.DataFrame,
-        date_ranges: dict,
-        include_overall: str,
         df_yearly_performance: pd.DataFrame,
         df_points_chart: pd.DataFrame,
         df_file_tag_and_jobsheet_version: pd.DataFrame = None,  # Made optional
@@ -529,20 +541,20 @@ class KPIDataProcessor:
         writer.sheets[overall_summary_sheet] = worksheet
 
         # Write overall summary information
-        self._write_summary_header(worksheet, df, date_ranges, include_overall)
+        self._write_overall_summary_header(worksheet, df)
 
         # Write main summary tables
         df_list = [summary_data["photographers"], summary_data["photostackers"], summary_data["retouchers"]]
         df_table_rows_map = self._write_main_summary_tables(writer, df_list, overall_summary_sheet)
 
         # Write detailed sheets
-        self._write_detailed_sheets(writer, workbook, summary_data, df_output_sheets, date_ranges, df)
+        self._write_detailed_sheets(writer, workbook, summary_data, df_output_sheets, df)
 
         # Write table rows map
         df_table_rows_map.to_excel(writer, sheet_name="table_rows_map", index=False)
 
         # Write yearly performance sheet
-        self._write_yearly_performance_sheet(writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart, date_ranges)
+        self._write_yearly_performance_sheet(writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart)
 
         # Write job sheet version analysis if provided
         if df_file_tag_and_jobsheet_version is not None:
@@ -563,37 +575,39 @@ class KPIDataProcessor:
 
         writer.close()
 
-    def _write_summary_header(self, worksheet, df: pd.DataFrame, date_ranges: dict, include_overall: str):
+    def _write_overall_summary_header(self, worksheet, df: pd.DataFrame):
         """Write the summary header information"""
         import datetime as dt
 
-        worksheet.write(0, 0, config.OVERALL_SUMMARY_SHEETNAME)
-        worksheet.write(1, 0, "Start Date:")
-        worksheet.write(2, 0, "End Date:")
-        worksheet.write(3, 0, "Working Days")
-
-        if include_overall == "y":
+        if self.include_overall:
             overall_kpi_start_date = min(df[config.COL_PHOTOGRAPHER_DATE])
             overall_kpi_start_date_str = ""
             try:
                 overall_kpi_start_date_str = utils.convert_date_obj_to_str(overall_kpi_start_date)
             except:
                 pass
-                # if python_errors_list:
-                #     utils.write_to_file(python_errors_filepath, python_errors_list)
 
             today_date_obj = dt.datetime.today().date()
-            worksheet.write(1, 1, overall_kpi_start_date_str)
-            worksheet.write(2, 1, utils.convert_date_obj_to_str(today_date_obj))
-
+            start_date_to_write = overall_kpi_start_date_str
+            end_date_to_write = utils.convert_date_obj_to_str(today_date_obj)
             _working_days = len(pd.bdate_range(overall_kpi_start_date_str, today_date_obj))
-            worksheet.write(3, 1, _working_days)
         else:
-            worksheet.write(1, 1, utils.convert_date_obj_to_str(date_ranges["start_date"]))
-            worksheet.write(2, 1, utils.convert_date_obj_to_str(date_ranges["end_date"]))
-            worksheet.write(3, 1, date_ranges["working_days"])
+            start_date_to_write = utils.convert_date_obj_to_str(self.kpi_start_date)
+            end_date_to_write = utils.convert_date_obj_to_str(self.kpi_end_date)
+            _working_days = self.kpi_working_days
 
-    def _write_main_tables(self, writer, df_list: List[pd.DataFrame], summary_sheet: str) -> pd.DataFrame:
+        # Write the dates and working days to the worksheet
+        worksheet.write(0, 0, config.OVERALL_SUMMARY_SHEETNAME)
+        worksheet.write(1, 0, "Start Date:")
+        worksheet.write(1, 1, start_date_to_write)
+
+        worksheet.write(2, 0, "End Date:")
+        worksheet.write(2, 1, end_date_to_write)
+
+        worksheet.write(3, 0, "Working Days")
+        worksheet.write(3, 1, _working_days)
+
+    def _write_main_summary_tables(self, writer, df_list: List[pd.DataFrame], summary_sheet: str) -> pd.DataFrame:
         """Write main summary tables and return table rows mapping"""
         df_table_rows_map = pd.DataFrame(columns=["table_name", "start", "end"])
         r = config.START_ROW_EXCEL_OUTPUT
@@ -652,11 +666,11 @@ class KPIDataProcessor:
         workbook: "xlsxwriter.Workbook",
         summary_data: dict,
         df_output_sheets: pd.DataFrame,
-        date_ranges: dict,
         df: pd.DataFrame,
     ):
         """Write detailed sheets for each data type"""
         import numbers
+        import datetime as dt
 
         unnamed_sheets = 0
         overall_kpi_start_date = min(df[config.COL_PHOTOGRAPHER_DATE])
@@ -697,12 +711,25 @@ class KPIDataProcessor:
                 # worksheet.write(1, 1, overall_kpi_start_date_str)
             else:
                 index = True
+
+            if self.include_overall:
+                start_date_to_write = overall_kpi_start_date_str
+                today_date_obj = dt.datetime.today().date()
+                end_date_to_write = utils.convert_date_obj_to_str(today_date_obj)
+                _working_days = len(pd.bdate_range(overall_kpi_start_date_str, today_date_obj))
+            else:
+                start_date_to_write = utils.convert_date_obj_to_str(self.kpi_start_date)
+                end_date_to_write = utils.convert_date_obj_to_str(self.kpi_end_date)
+                _working_days = self.kpi_working_days
+
             worksheet.write(0, 0, "Start Date")
+            worksheet.write(0, 1, start_date_to_write)
+
             worksheet.write(1, 0, "End Date")
+            worksheet.write(1, 1, end_date_to_write)
+
             worksheet.write(2, 0, "Working Days")
-            worksheet.write(0, 1, utils.convert_date_obj_to_str(date_ranges["start_date"]))
-            worksheet.write(1, 1, utils.convert_date_obj_to_str(date_ranges["end_date"]))
-            worksheet.write(2, 1, date_ranges["working_days"])
+            worksheet.write(2, 1, _working_days)
 
             # Write data
             temp_df.to_excel(
@@ -720,7 +747,6 @@ class KPIDataProcessor:
         df_output_sheets: pd.DataFrame,
         df_yearly_performance: pd.DataFrame,
         df_points_chart: pd.DataFrame,
-        date_ranges: dict,
     ):
         """Write the yearly performance sheet"""
         import numbers
@@ -740,8 +766,8 @@ class KPIDataProcessor:
             sheetname,
             df_yearly_performance,
             df_points_chart,
-            date_ranges["yp_start_date"],
-            date_ranges["yp_end_date"],
+            self.yp_start_date,
+            self.yp_end_date,
         )
 
     def process_kpi_data(self):
@@ -763,7 +789,8 @@ class KPIDataProcessor:
                 raise SystemExit(1)
 
             # Get processing options
-            include_archives, include_overall = self.get_processing_options(user_input_df)
+            self.set_date_ranges(user_input_df)
+            self.extract_include_archives_and_overall_options(user_input_df)
 
             # Load main data
             df, df_lens, df_src_filenames = self.load_main_data_files()
@@ -796,12 +823,14 @@ class KPIDataProcessor:
             # Prepare supporting data
             active_staff, staff_and_their_categories = self.prepare_staff_data(df_staff_exp_kpi)
             sub_catg_list, ppj_dict = self.prepare_ppj_data(df_catg_ppj)
-            date_ranges = self.extract_date_ranges(user_input_df)
 
+            # ---------------------------------------------------------------------------
             # Generate summary reports
             print("Generating summary reports...")
 
-            summary_data = self.generate_summary_reports(df, include_overall, date_ranges)
+            summary_data = self.generate_summary_reports(df)
+
+            # --------------------------------------------------------------------------
 
             # Calculate KPIs
             summary_data = self.calculate_kpis(summary_data, ppj_dict, sub_catg_list)
@@ -814,7 +843,7 @@ class KPIDataProcessor:
 
             # Calculate yearly performance
             df_yearly_performance, df_points_chart = self.calculate_yearly_performance(
-                df, df_staff_exp_kpi, date_ranges, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list
+                df, df_staff_exp_kpi, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list
             )
 
             # Create file tag and job sheet version analysis
