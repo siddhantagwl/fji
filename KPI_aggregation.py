@@ -265,16 +265,6 @@ class KPIDataProcessor:
 
         return df, errors
 
-    # def get_filename_and_row(self, row_id: int, df_lens: List[int],
-    #                         df_src_filenames: List[str]) -> Tuple[str, int]:
-    #     """Get filename and row number for error reporting"""
-
-    #     len_sum = 0
-    #     for df_len, filename in zip(df_lens, df_src_filenames):
-    #         len_sum = len_sum + df_len
-    #         if row_id < len_sum:
-    #             return filename, row_id - (len_sum - df_len)
-
     def get_local_row(self, row_id: int, df_lengths: List[int]) -> int:
         """Given a global row ID across multiple stacked DataFrames,
         return the local row index within its corresponding DataFrame.
