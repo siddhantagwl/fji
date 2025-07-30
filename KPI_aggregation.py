@@ -33,9 +33,26 @@ class KPIDataProcessor:
 
     def setup_file_paths(self):
         """Initialize file paths for errors and warnings"""
+        self.input_excel_path = os.path.join(self.curr_path, config.INPUT_UI_FILENAME)
         self.python_errors_filepath = os.path.join(self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_ERRORS_FILENAME)
         self.python_warnings_filepath = os.path.join(self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_WARNINGS_FILENAME)
         self.datasheet_folder_path = os.path.join(self.curr_path, config.DATESHEETS_FOLDER_NAME)
+        self.archive_kpi_path = os.path.join(self.datasheet_folder_path, config.ARCHIVE_FOLDER_NAME)
+
+        self.output_intermediate_excel_filepath = os.path.join(
+            self.curr_path,
+            config.PYTHON_CODES_FOLDER_NAME,
+            config.INTERMEDIATE_FOLDER_NAME,
+            config.INTERMEDIATE_OUTPUT_FILENAME,
+        )
+
+        self.datasheet_aggregated_filepath = os.path.join(
+            self.curr_path,
+            config.PYTHON_CODES_FOLDER_NAME,
+            config.INTERMEDIATE_FOLDER_NAME,
+            config.AGGREGATED_DATASHEET_OUTPUT_FILENAME,
+        )
+
         self.validate_datasheet_folder()
 
     def validate_datasheet_folder(self) -> str:
@@ -46,6 +63,15 @@ class KPIDataProcessor:
             self.python_errors_list.append(msg)
             self.handle_errors()
             raise SystemExit(1)
+
+    def validate_archives_folder(self) -> bool:
+        """Validate that the archives folder exists"""
+        if not os.path.exists(self.archive_kpi_path):
+            msg = f"'{config.ARCHIVE_FOLDER_NAME}' folder doesn't exist. Please check"
+            self.python_warnings_list.append(msg)
+            print(msg, "\n")
+            return False
+        return True
 
     def cleanup_existing_logs(self):
         """Remove existing error and warning log files"""
@@ -59,22 +85,20 @@ class KPIDataProcessor:
         """Load all required configuration data from Excel files"""
         print("Loading configuration data...")
 
-        input_excel_path = os.path.join(self.curr_path, config.INPUT_UI_FILENAME)
-
         # Read staff expected KPI sheet
-        df_staff_exp_kpi, errors = utils.read_excel_file(input_excel_path, config.STAFF_EXPECTED_KPI_SHEETNAME)
+        df_staff_exp_kpi, errors = utils.read_excel_file(self.input_excel_path, config.STAFF_EXPECTED_KPI_SHEETNAME)
         self.python_errors_list.extend(errors)
 
         # Read Category Points per Job (PPJ)
-        df_catg_ppj, errors = utils.read_excel_file(input_excel_path, config.CATEGORY_PPJ_SHEETNAME)
+        df_catg_ppj, errors = utils.read_excel_file(self.input_excel_path, config.CATEGORY_PPJ_SHEETNAME)
         self.python_errors_list.extend(errors)
 
         # Read output sheet names
-        df_output_sheets, errors = utils.read_excel_file(input_excel_path, sheet_name=config.OUTPUT_SHEETNAMES)
+        df_output_sheets, errors = utils.read_excel_file(self.input_excel_path, sheet_name=config.OUTPUT_SHEETNAMES)
         self.python_errors_list.extend(errors)
 
         # Read date inputs
-        user_input_df, errors = utils.read_excel_file(input_excel_path, sheet_name=config.DATE_INPUT_SHEETNAME)
+        user_input_df, errors = utils.read_excel_file(self.input_excel_path, sheet_name=config.DATE_INPUT_SHEETNAME)
         self.python_errors_list.extend(errors)
 
         return df_staff_exp_kpi, df_catg_ppj, df_output_sheets, user_input_df
@@ -118,19 +142,9 @@ class KPIDataProcessor:
 
     def load_archive_data(self, include_archives: str) -> Optional[pd.DataFrame]:
         """Load archive data if requested"""
-        if include_archives != "y":
-            return None
 
         print("\nReading Archives ...\n")
-        archive_kpi_path = os.path.join(self.datasheet_folder_path, config.ARCHIVE_FOLDER_NAME)
-
-        if not os.path.exists(archive_kpi_path):
-            msg = f"'{config.ARCHIVE_FOLDER_NAME}' folder doesn't exist. Please check"
-            self.python_errors_list.append(msg)
-            print(msg, "\n")
-            return None
-
-        archive_kpi_files = glob.glob(os.path.join(archive_kpi_path, "*.csv"))
+        archive_kpi_files = glob.glob(os.path.join(self.archive_kpi_path, "*.csv"))
         print(f"Found {len(archive_kpi_files)} KPI file(s) in Archive ...\n")
 
         if not archive_kpi_files:
@@ -138,7 +152,6 @@ class KPIDataProcessor:
 
         df_archive, errors, _, _ = utils.read_data_files(archive_kpi_files, date_parser=None, colsExpected=config.COLS_TO_EXPECT_IN_CSV)
         self.python_errors_list.extend(errors)
-
         return df_archive
 
     def validate_columns(self, df: pd.DataFrame):
@@ -496,43 +509,31 @@ class KPIDataProcessor:
         df_yearly_performance: pd.DataFrame,
         df_points_chart: pd.DataFrame,
         df_file_tag_and_jobsheet_version: pd.DataFrame = None,  # Made optional
-    ):
+    ) -> None:
         """Create the final Excel output file"""
         import datetime as dt
         import numbers
 
         # Save aggregated datasheet
-        datasheet_aggregated_filepath = os.path.join(
-            self.curr_path,
-            config.PYTHON_CODES_FOLDER_NAME,
-            config.INTERMEDIATE_FOLDER_NAME,
-            config.AGGREGATED_DATASHEET_OUTPUT_FILENAME,
-        )
-        df.to_excel(datasheet_aggregated_filepath, index=False)
+        df.to_excel(self.datasheet_aggregated_filepath, index=False)
 
         # Setup Excel writer
-        summary_sheet = df_output_sheets.iloc[0, 0]
-        excel_filepath = os.path.join(
-            self.curr_path,
-            config.PYTHON_CODES_FOLDER_NAME,
-            config.INTERMEDIATE_FOLDER_NAME,
-            config.INTERMEDIATE_OUTPUT_FILENAME,
-        )
+        overall_summary_sheet = df_output_sheets.iloc[0, 0]
 
-        if os.path.exists(excel_filepath):
-            os.remove(excel_filepath)
+        if os.path.exists(self.output_intermediate_excel_filepath):
+            os.remove(self.output_intermediate_excel_filepath)
 
-        writer = pd.ExcelWriter(excel_filepath, engine="xlsxwriter")
+        writer = pd.ExcelWriter(self.output_intermediate_excel_filepath, engine="xlsxwriter")
         workbook = writer.book
-        worksheet = workbook.add_worksheet(summary_sheet)
-        writer.sheets[summary_sheet] = worksheet
+        worksheet = workbook.add_worksheet(overall_summary_sheet)
+        writer.sheets[overall_summary_sheet] = worksheet
 
         # Write overall summary information
         self._write_summary_header(worksheet, df, date_ranges, include_overall)
 
         # Write main summary tables
         df_list = [summary_data["photographers"], summary_data["photostackers"], summary_data["retouchers"]]
-        df_table_rows_map = self._write_main_tables(writer, df_list, summary_sheet)
+        df_table_rows_map = self._write_main_summary_tables(writer, df_list, overall_summary_sheet)
 
         # Write detailed sheets
         self._write_detailed_sheets(writer, workbook, summary_data, df_output_sheets, date_ranges, df)
@@ -561,7 +562,6 @@ class KPIDataProcessor:
         df_table_rows_map_month_wise.to_excel(writer, sheet_name="table_rows_map_month_wise", index=False)
 
         writer.close()
-        return excel_filepath
 
     def _write_summary_header(self, worksheet, df: pd.DataFrame, date_ranges: dict, include_overall: str):
         """Write the summary header information"""
@@ -769,9 +769,10 @@ class KPIDataProcessor:
             df, df_lens, df_src_filenames = self.load_main_data_files()
 
             # Load archive data if needed
-            df_archive = self.load_archive_data(include_archives)
-            if df_archive is not None:
-                df = pd.concat([df, df_archive])
+            if self.validate_archives_folder() and self.include_archives:
+                df_archive = self.load_archive_data()
+                if df_archive is not None:
+                    df = pd.concat([df, df_archive])
 
             # Validate columns
             self.validate_columns(df)
@@ -820,16 +821,7 @@ class KPIDataProcessor:
             # df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
 
             # Create Excel output
-            excel_filepath = self.create_excel_output(
-                df,
-                summary_data,
-                df_output_sheets,
-                date_ranges,
-                include_overall,
-                df_yearly_performance,
-                df_points_chart,
-                # df_file_tag_and_jobsheet_version,
-            )
+            self.create_excel_output(df, summary_data, df_output_sheets, df_yearly_performance, df_points_chart)
 
             end_time = round((time.time() - start_time))
             print(f"Success ... Time taken: {end_time} seconds")
@@ -837,7 +829,7 @@ class KPIDataProcessor:
             return {
                 "dataframe": df,
                 "summary_data": summary_data,
-                "excel_filepath": excel_filepath,
+                "excel_filepath": self.output_intermediate_excel_filepath,
                 "processing_time": end_time,
             }
 
