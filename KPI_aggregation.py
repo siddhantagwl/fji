@@ -490,18 +490,21 @@ class KPIDataProcessor:
 
     def filter_for_active_staff(self, summary_data: dict, active_staff: List[str]) -> dict:
         """Filter data for active staff only"""
+
         print("Filtering summary data for active staff ...\n")
         # Filter index for active staff
         for key in ["photographers", "photostackers", "retouchers"]:
-            summary_data[key] = utils.filter_index_for_active_staff(summary_data[key], active_staff)
+            df = summary_data[key]
+            summary_data[key] = utils.filter_index_for_active_staff(df, active_staff)
 
             # Filter column values for active staff
             project_wise_key = f"{key}_project_wise"
-            summary_data[project_wise_key] = utils.filter_column_values_for_active_staff(summary_data[project_wise_key], active_staff)
+            df2 = summary_data[project_wise_key]
+            summary_data[project_wise_key] = utils.filter_column_values_for_active_staff(df2, active_staff)
 
         # Filter monthly data for active staff
-        for key in summary_data["monthly_data"].keys():
-            summary_data["monthly_data"][key] = utils.filter_index_for_active_staff(summary_data["monthly_data"][key], active_staff)
+        for key, df in summary_data["monthly_data"].items():
+            summary_data["monthly_data"][key] = utils.filter_index_for_active_staff(df, active_staff)
 
         return summary_data
 
@@ -649,7 +652,6 @@ class KPIDataProcessor:
             "Retouches": "Retouchers",
             "Variance": "Retouchers",
         }
-
         worksheet = workbook.add_worksheet(sheetName)
         writer.sheets[sheetName] = worksheet
 
@@ -857,9 +859,7 @@ class KPIDataProcessor:
             summary_data = self.filter_for_active_staff(summary_data, active_staff)
 
             # Calculate yearly performance
-            df_yearly_performance, df_points_chart = self.calculate_yearly_performance(
-                df, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list
-            )
+            df_yearly_performance, df_points_chart = self.calculate_yearly_performance(df, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list)
 
             # Create file tag and job sheet version analysis
             # df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
