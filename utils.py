@@ -228,7 +228,9 @@ def calc_KPI_from_PPJ(df, ppj_dict, sub_catg_list):
 
 
 def filter_index_for_active_staff(df, active_staff):
+    original_index_name = df.index.name  # Save the original index name
     temp_df = df.filter(items=active_staff, axis=0)
+    temp_df.index.name = original_index_name  # Restore the index name
     return temp_df
 
 
