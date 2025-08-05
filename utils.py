@@ -148,6 +148,7 @@ def read_data_files(
         df, warn = read_csv_file(file, dayfirst, date_parser)
         return filename, df, warn
 
+    print("Starting to read files...")
     reader = ThreadPoolExecutor().map if use_threads else map
     jobs = reader(read_and_process, file_path_list)
 
@@ -155,7 +156,7 @@ def read_data_files(
         from tqdm import tqdm
 
         jobs = tqdm(jobs, total=len(file_path_list), desc="Reading CSV files")
-
+    
     for i, (filename, temp_df, warn) in enumerate(jobs):
         print(f"{i}. Reading: {filename}")
         if warn:
