@@ -387,12 +387,10 @@ class KPIDataProcessor:
         from summary_photostackers import (
             summary_of_photostackers_all_projects,
             summary_of_photostackers_project_wise,
-            summary_of_photostackers_by_month,
         )
         from summary_retouchers import (
             summary_of_retouchers_all_projects,
             summary_of_retouchers_project_wise,
-            summary_of_retouchers_by_month,
         )
         from summary_photography import summary_of_photography_project_wise
 
