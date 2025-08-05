@@ -76,6 +76,7 @@ def summary_of_retouchers_all_projects(df: DataFrame, include_overall: bool, sta
                 temp_df_date5_filtered,
             ]
         )
+        df_date_filtered = df_date_filtered.drop_duplicates()
         df_date_filtered.reset_index(drop=True, inplace=True)
 
     cols = ["Retoucher", "Transfer", "Retouches", "Variance", "#_projects_worked"]
@@ -147,6 +148,7 @@ def summary_of_retouchers_project_wise(df, start_date, end_date):
         r5_df_filtered = utils.filter_df_on_dates(r5_df, start_date, end_date, config.COL_DATE_DONE_RETOUCHERS_SIGN_5)
 
         concat_df = utils.concat_dfs([r1_df_filtered, r2_df_filtered, r3_df_filtered, r4_df_filtered, r5_df_filtered])
+        concat_df = concat_df.drop_duplicates()
 
         retoucher_unique_projects = utils.df_column_to_uniques_list(concat_df, config.COL_PROJECT_NAME)
 
@@ -182,6 +184,7 @@ def summary_of_retouchers_project_wise(df, start_date, end_date):
                     r5_project_filtered_df,
                 ]
             )
+            temp_concat_df = temp_concat_df.drop_duplicates()
             review = temp_concat_df[config.COL_WARNINGS].str.contains(config.REVIEW_RETOUCHER).any()
             review = "Investigate" if (review == True) else ""
 

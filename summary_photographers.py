@@ -77,7 +77,6 @@ def summary_of_photographers_all_projects(df: DataFrame, include_overall: bool, 
         project_names_p3 = p3_df[config.COL_PROJECT_NAME].unique().tolist()
 
         all_projects_worked = len(set(project_names_p1 + project_names_p2 + project_names_p3))
-        # all_projects_worked = str(len(all_projects_worked)) + '-> ' + ' || '.join(all_projects_worked)
 
         items1, images1 = calc_photographers(p1_df)
         items2, images2 = calc_photographers(p2_df)

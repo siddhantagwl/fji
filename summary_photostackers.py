@@ -30,9 +30,9 @@ def summary_of_photostackers_all_projects(df: DataFrame, include_overall: bool, 
         # user in the KP_invoivce cells
         temp_df_date1_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOSTACKER_DATE_1)
         temp_df_date2_filtered = utils.filter_df_on_dates(df, start_date, end_date, config.COL_PHOTOSTACKER_DATE_2)
-        # temp_df_date2_filtered = pd.DataFrame()
 
         df = utils.concat_dfs([temp_df_date1_filtered, temp_df_date2_filtered])
+        df = df.drop_duplicates()  # Remove duplicate rows in case they were filtered out
         df.reset_index(drop=True, inplace=True)
 
     # make an empty dataframe with these columns
@@ -43,19 +43,16 @@ def summary_of_photostackers_all_projects(df: DataFrame, include_overall: bool, 
 
     # Filter out invalid names upfront
     valid_photostacker_names = [
-        name for name in all_photostacker_names
-        if name and name != config.REDUNDANT_VALUE.lower() and name not in config.UNMERGE_START_CONST_VALUES
+        name for name in all_photostacker_names if name and name != config.REDUNDANT_VALUE.lower() and name not in config.UNMERGE_START_CONST_VALUES
     ]
 
     for p_name in sorted(valid_photostacker_names):
 
         p1_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_1, p_name)
         p2_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_2, p_name)
-        # p2_df = pd.DataFrame()
 
         project_names_p1 = utils.df_column_to_uniques_list(p1_df, config.COL_PROJECT_NAME)
         project_names_p2 = utils.df_column_to_uniques_list(p2_df, config.COL_PROJECT_NAME)
-        # project_names_p2 = []
 
         all_projects_worked = len(set(project_names_p1 + project_names_p2))
 
@@ -101,6 +98,7 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
         p2_df_filtered = utils.filter_df_on_dates(p2_df, start_date, end_date, config.COL_PHOTOSTACKER_DATE_2)
 
         concat_df = utils.concat_dfs([p1_df_filtered, p2_df_filtered])
+        concat_df = concat_df.drop_duplicates()  # Remove duplicate rows in case they were filtered out
 
         photostacker_unique_projects = utils.df_column_to_uniques_list(concat_df, config.COL_PROJECT_NAME)
 
@@ -164,6 +162,7 @@ def summary_of_photostackers_by_month(df: DataFrame) -> tuple[DataFrame, DataFra
             p1_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOSTACKER_SIGN_1, p_name)
             p2_df = utils.filter_df_on_column_value(month_df, config.COL_PHOTOSTACKER_SIGN_2, p_name)
             combined_df = pd.concat([p1_df, p2_df], ignore_index=True)
+            combined_df = combined_df.drop_duplicates()  # Remove duplicate rows in case they were filtered out
 
             df_rename.loc[p_name, month] = utils.sum_df_on_a_column(combined_df, config.COL_RENAME)
             df_adjust.loc[p_name, month] = utils.sum_df_on_a_column(combined_df, config.COL_ADJUST)
