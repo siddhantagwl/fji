@@ -574,7 +574,7 @@ class KPIDataProcessor:
         df_table_rows_map.to_excel(writer, sheet_name="table_rows_map", index=False)
 
         # Write yearly performance sheet
-        self._write_yearly_performance_sheet(writer, workbook, df_yearly_performance, df_points_chart)
+        # self._write_yearly_performance_sheet(writer, workbook, df_yearly_performance, df_points_chart)
 
         # Write job sheet version analysis if provided
         if df_file_tag_and_jobsheet_version is not None:
@@ -859,7 +859,8 @@ class KPIDataProcessor:
             summary_data = self.filter_for_active_staff(summary_data, active_staff)
 
             # Calculate yearly performance
-            df_yearly_performance, df_points_chart = self.calculate_yearly_performance(df, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list)
+            df_yearly_performance, df_points_chart = None, None
+            # df_yearly_performance, df_points_chart = self.calculate_yearly_performance(df, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list)
 
             # Create file tag and job sheet version analysis
             # df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
