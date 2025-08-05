@@ -5,6 +5,7 @@ import os
 import glob
 from pathlib import Path
 import xlsxwriter
+import traceback
 
 import sys
 from typing import List, Optional, Tuple
@@ -856,8 +857,10 @@ class KPIDataProcessor:
             raise
         except Exception as e:
             error_msg = f"Unexpected error during processing: {str(e)}"
+            line_info = traceback.format_exc()
             print(error_msg)
-            self.python_errors_list.append(error_msg)
+            print(line_info)
+            self.python_errors_list.append(f"{error_msg}\nTraceback:\n{line_info}")
             self.handle_errors()
             raise SystemExit(1)
 
