@@ -30,7 +30,7 @@ class KPIDataProcessor:
         self.parent_path = Path().resolve().parent
         self.python_errors_list = []
         self.python_warnings_list = []
-        self.setup_file_paths()
+
         self.kpi_start_date = None
         self.kpi_end_date = None
         self.kpi_working_days = None
@@ -39,7 +39,15 @@ class KPIDataProcessor:
         self.include_archives = False
         self.include_overall = False
 
-    def setup_file_paths(self):
+        self.df_staff_exp_kpi = None
+        self.df_catg_ppj = None
+        self.df_output_sheet_names = None
+        self.df_user_input = None
+
+        self._setup_file_paths()
+        self._load_configuration_data()
+
+    def _setup_file_paths(self):
         """Initialize file paths for errors and warnings"""
         self.input_excel_path = os.path.join(self.curr_path, config.INPUT_UI_FILENAME)
         self.python_errors_filepath = os.path.join(self.curr_path, config.PYTHON_CODES_FOLDER_NAME, config.PYTHON_ERRORS_FILENAME)
@@ -61,9 +69,9 @@ class KPIDataProcessor:
             config.AGGREGATED_DATASHEET_OUTPUT_FILENAME,
         )
 
-        self.validate_datasheet_folder()
+        self._validate_datasheet_folder()
 
-    def validate_datasheet_folder(self) -> str:
+    def _validate_datasheet_folder(self) -> str:
         """Validate that the datasheet folder exists"""
         if not os.path.exists(self.datasheet_folder_path):
             msg = f"**Critical Error - Unable to find folder which contains exported files from FJI Jobsheet** " f"--> {self.datasheet_folder_path}"
@@ -71,6 +79,30 @@ class KPIDataProcessor:
             self.python_errors_list.append(msg)
             self.handle_errors()
             raise SystemExit(1)
+
+    def _load_configuration_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Load all required configuration data from Excel files"""
+        print("Loading configuration data...")
+
+        # Read staff expected KPI sheet
+        df_staff_exp_kpi, errors = utils.read_excel_file(self.input_excel_path, config.STAFF_EXPECTED_KPI_SHEETNAME)
+        self.python_errors_list.extend(errors)
+        self.df_staff_exp_kpi = df_staff_exp_kpi
+
+        # Read Category Points per Job (PPJ)
+        df_catg_ppj, errors = utils.read_excel_file(self.input_excel_path, config.CATEGORY_PPJ_SHEETNAME)
+        self.python_errors_list.extend(errors)
+        self.df_catg_ppj = df_catg_ppj
+
+        # Read output sheet names
+        df_output_sheets, errors = utils.read_excel_file(self.input_excel_path, sheet_name=config.OUTPUT_SHEETNAMES)
+        self.python_errors_list.extend(errors)
+        self.df_output_sheet_names = df_output_sheets
+
+        # Read date inputs
+        user_input_df, errors = utils.read_excel_file(self.input_excel_path, sheet_name=config.DATE_INPUT_SHEETNAME)
+        self.python_errors_list.extend(errors)
+        self.df_user_input = user_input_df
 
     def validate_archives_folder(self) -> bool:
         """Validate that the archives folder exists"""
@@ -89,31 +121,10 @@ class KPIDataProcessor:
             os.remove(filepath)
             print(f"Deleted existing file: {filepath}\n")
 
-    def load_configuration_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Load all required configuration data from Excel files"""
-        print("Loading configuration data...")
-
-        # Read staff expected KPI sheet
-        df_staff_exp_kpi, errors = utils.read_excel_file(self.input_excel_path, config.STAFF_EXPECTED_KPI_SHEETNAME)
-        self.python_errors_list.extend(errors)
-
-        # Read Category Points per Job (PPJ)
-        df_catg_ppj, errors = utils.read_excel_file(self.input_excel_path, config.CATEGORY_PPJ_SHEETNAME)
-        self.python_errors_list.extend(errors)
-
-        # Read output sheet names
-        df_output_sheets, errors = utils.read_excel_file(self.input_excel_path, sheet_name=config.OUTPUT_SHEETNAMES)
-        self.python_errors_list.extend(errors)
-
-        # Read date inputs
-        user_input_df, errors = utils.read_excel_file(self.input_excel_path, sheet_name=config.DATE_INPUT_SHEETNAME)
-        self.python_errors_list.extend(errors)
-
-        return df_staff_exp_kpi, df_catg_ppj, df_output_sheets, user_input_df
-
-    def extract_include_archives_and_overall_options(self, user_input_df: pd.DataFrame) -> None:
+    def extract_include_archives_and_overall_options(self) -> None:
         """Extract processing options from user input and set class attributes"""
         # check if 'archives' and 'overall' values are missing, if not set the value else use default
+        user_input_df = self.df_user_input.copy()
         include_archives = user_input_df["archives"].iloc[0].lower() if not pd.isna(user_input_df["archives"].iloc[0]) else "n"
         include_overall = user_input_df["overall"].iloc[0].lower() if not pd.isna(user_input_df["overall"].iloc[0]) else "n"
 
@@ -283,8 +294,10 @@ class KPIDataProcessor:
         if self.python_errors_list:
             utils.write_to_file(self.python_errors_filepath, self.python_errors_list)
 
-    def prepare_staff_data(self, df_staff_exp_kpi: pd.DataFrame) -> Tuple[List[str], dict]:
+    def prepare_staff_data(self) -> Tuple[List[str], dict]:
         """Prepare staff data including active staff list and categories"""
+        df_staff_exp_kpi = self.df_staff_exp_kpi.copy()
+
         df_staff_exp_kpi = df_staff_exp_kpi.fillna("")
         df_staff_exp_kpi["Names"] = df_staff_exp_kpi["Names"].apply(lambda x: x.lower())
 
@@ -298,8 +311,10 @@ class KPIDataProcessor:
 
         return active_staff, staff_and_their_categories
 
-    def prepare_ppj_data(self, df_catg_ppj: pd.DataFrame) -> Tuple[List[str], dict]:
+    def prepare_ppj_data(self) -> Tuple[List[str], dict]:
         """Prepare Points Per Job (PPJ) data"""
+        df_catg_ppj = self.df_catg_ppj.copy()
+
         df_catg_ppj = df_catg_ppj.fillna("")
         sub_catg_list = df_catg_ppj["Sub category"].str.lower().unique().tolist()
 
@@ -309,22 +324,23 @@ class KPIDataProcessor:
 
         return sub_catg_list, ppj_dict
 
-    def set_date_ranges(self, user_input_df: pd.DataFrame) -> dict:
+    def set_date_ranges(self) -> dict:
         """Extract and validate date ranges from user input"""
-        user_input_df["Start Date"] = pd.to_datetime(user_input_df["Start Date"])
-        user_input_df["End Date"] = pd.to_datetime(user_input_df["End Date"])
+        df_user_input = self.df_user_input.copy()
+        df_user_input["Start Date"] = pd.to_datetime(df_user_input["Start Date"])
+        df_user_input["End Date"] = pd.to_datetime(df_user_input["End Date"])
 
         # Main date range
-        user_start_date_obj = user_input_df.iloc[0, 0]
-        user_end_date_obj = user_input_df.iloc[0, 1]
+        user_start_date_obj = df_user_input.iloc[0, 0]
+        user_end_date_obj = self.df_user_input.iloc[0, 1]
         working_days = len(pd.bdate_range(user_start_date_obj, user_end_date_obj))
 
         print(f"Start Date: {user_start_date_obj}\nEnd Date: {user_end_date_obj}")
         print(f"# of working days: {working_days}\n")
 
         # Yearly performance date range
-        user_start_date_yp_obj = user_input_df.iloc[1, 0]
-        user_end_date_yp_obj = user_input_df.iloc[1, 1]
+        user_start_date_yp_obj = df_user_input.iloc[1, 0]
+        user_end_date_yp_obj = df_user_input.iloc[1, 1]
 
         print(f"Yearly Performance rating:\n\nStart Date: {user_start_date_yp_obj}\nEnd Date: {user_end_date_yp_obj}")
 
@@ -492,7 +508,6 @@ class KPIDataProcessor:
     def calculate_yearly_performance(
         self,
         df: pd.DataFrame,
-        df_staff_exp_kpi: pd.DataFrame,
         staff_and_their_categories: dict,
         active_staff: List[str],
         ppj_dict: dict,
@@ -501,7 +516,8 @@ class KPIDataProcessor:
         """Calculate yearly performance ratings"""
         import yearly_performance_points
 
-        df_staff_exp_kpi_modf = yearly_performance_points.modify_date_cols_to_month_year(df_staff_exp_kpi)
+        print("Calculating yearly KPI performance ratings ...\n")
+        df_staff_exp_kpi_modf = yearly_performance_points.modify_date_cols_to_month_year(self.df_staff_exp_kpi)
 
         user_end_date_yp_obj = yearly_performance_points.calc_month_end_date(self.yp_end_date)
         user_date_list = yearly_performance_points.date_list(self.yp_start_date, user_end_date_yp_obj)
@@ -520,20 +536,18 @@ class KPIDataProcessor:
         self,
         df: pd.DataFrame,
         summary_data: dict,
-        df_output_sheets: pd.DataFrame,
         df_yearly_performance: pd.DataFrame,
         df_points_chart: pd.DataFrame,
         df_file_tag_and_jobsheet_version: pd.DataFrame = None,  # Made optional
     ) -> None:
         """Create the final Excel output file"""
-        import datetime as dt
-        import numbers
 
+        print("Creating Excel output file ...\n")
         # Save aggregated datasheet
         df.to_excel(self.datasheet_aggregated_filepath, index=False)
 
         # Setup Excel writer
-        overall_summary_sheet = df_output_sheets.iloc[0, 0]
+        overall_summary_sheet = self.df_output_sheet_names.iloc[0, 0]
 
         if os.path.exists(self.output_intermediate_excel_filepath):
             os.remove(self.output_intermediate_excel_filepath)
@@ -551,13 +565,13 @@ class KPIDataProcessor:
         df_table_rows_map = self._write_main_summary_tables(writer, df_list, overall_summary_sheet)
 
         # Write detailed sheets
-        self._write_detailed_sheets(writer, workbook, summary_data, df_output_sheets, df)
+        self._write_detailed_sheets(writer, workbook, summary_data, df)
 
         # Write table rows map
         df_table_rows_map.to_excel(writer, sheet_name="table_rows_map", index=False)
 
         # Write yearly performance sheet
-        self._write_yearly_performance_sheet(writer, workbook, df_output_sheets, df_yearly_performance, df_points_chart)
+        self._write_yearly_performance_sheet(writer, workbook, df_yearly_performance, df_points_chart)
 
         # Write job sheet version analysis if provided
         if df_file_tag_and_jobsheet_version is not None:
@@ -572,7 +586,7 @@ class KPIDataProcessor:
             summary_data["monthly_data"]["retouchers_retouched"],
             summary_data["monthly_data"]["retouchers_variance"],
         ]
-        df_table_rows_map_month_wise = self._write_month_wise_tables(writer, workbook, df_month_wise_list, df_output_sheets.iloc[-1, 0])
+        df_table_rows_map_month_wise = self._write_month_wise_tables(writer, workbook, df_month_wise_list, self.df_output_sheet_names.iloc[-1, 0])
         # Write table rows map
         df_table_rows_map_month_wise.to_excel(writer, sheet_name="table_rows_map_month_wise", index=False)
 
@@ -670,7 +684,6 @@ class KPIDataProcessor:
         writer,
         workbook: "xlsxwriter.Workbook",
         summary_data: dict,
-        df_output_sheets: pd.DataFrame,
         df: pd.DataFrame,
     ):
         """Write detailed sheets for each data type"""
@@ -685,6 +698,7 @@ class KPIDataProcessor:
         except:
             print("Error converting overall KPI start date to string. Check date format.")
 
+        df_output_sheets = self.df_output_sheet_names.copy()
         df_dict = {
             df_output_sheets.iloc[1, 0]: summary_data["photography_summary"],
             df_output_sheets.iloc[2, 0]: summary_data["photography_summary_project_wise"],
@@ -749,7 +763,6 @@ class KPIDataProcessor:
         self,
         writer,
         workbook,
-        df_output_sheets: pd.DataFrame,
         df_yearly_performance: pd.DataFrame,
         df_points_chart: pd.DataFrame,
     ):
@@ -757,7 +770,7 @@ class KPIDataProcessor:
         import numbers
         from yearly_performance_points import write_yearly_performance_sheet
 
-        sheetname = df_output_sheets.iloc[6, 0]
+        sheetname = self.df_output_sheet_names.iloc[6, 0]
         unnamed_sheets = 0
 
         if isinstance(sheetname, numbers.Number):
@@ -785,17 +798,14 @@ class KPIDataProcessor:
             # Setup
             self.cleanup_existing_logs()
 
-            # Load configuration
-            df_staff_exp_kpi, df_catg_ppj, df_output_sheets, user_input_df = self.load_configuration_data()
-
             # Check for initial errors
             if self.python_errors_list:
                 self.handle_errors()
                 raise SystemExit(1)
 
             # Get processing options
-            self.set_date_ranges(user_input_df)
-            self.extract_include_archives_and_overall_options(user_input_df)
+            self.set_date_ranges()
+            self.extract_include_archives_and_overall_options()
 
             # Load main data
             df, df_lens, df_src_filenames = self.load_main_data_files()
@@ -826,13 +836,11 @@ class KPIDataProcessor:
                 # raise SystemExit(1)
 
             # Prepare supporting data
-            active_staff, staff_and_their_categories = self.prepare_staff_data(df_staff_exp_kpi)
-            sub_catg_list, ppj_dict = self.prepare_ppj_data(df_catg_ppj)
+            active_staff, staff_and_their_categories = self.prepare_staff_data()
+            sub_catg_list, ppj_dict = self.prepare_ppj_data()
 
             # ---------------------------------------------------------------------------
             # Generate summary reports
-            print("Generating summary reports...")
-
             summary_data = self.generate_summary_reports(df)
 
             # --------------------------------------------------------------------------
@@ -850,14 +858,14 @@ class KPIDataProcessor:
 
             # Calculate yearly performance
             df_yearly_performance, df_points_chart = self.calculate_yearly_performance(
-                df, df_staff_exp_kpi, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list
+                df, staff_and_their_categories, active_staff, ppj_dict, sub_catg_list
             )
 
             # Create file tag and job sheet version analysis
             # df_file_tag_and_jobsheet_version = self.file_tag_and_jobsheet_version_analysis(df)
 
             # Create Excel output
-            self.create_excel_output(df, summary_data, df_output_sheets, df_yearly_performance, df_points_chart)
+            self.create_excel_output(df, summary_data, df_yearly_performance, df_points_chart)
 
             end_time = round((time.time() - start_time))
             print(f"Success ... Time taken: {end_time} seconds")
