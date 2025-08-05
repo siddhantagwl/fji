@@ -636,7 +636,9 @@ class KPIDataProcessor:
 
         for df in df_list:
             # Write headers
-            category = category_map[df.index.name]
+            categ_name = df.index.name
+            print(f"Writing month-wise table for category: {categ_name}")
+            category = category_map[categ_name]
             worksheet.write(start_row, start_col, category)
             row = start_row + 1
             df.to_excel(
