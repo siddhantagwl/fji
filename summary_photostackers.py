@@ -41,10 +41,13 @@ def summary_of_photostackers_all_projects(df: DataFrame, include_overall: bool, 
 
     all_photostacker_names = get_all_photostackers_names(df)
 
-    for p_name in sorted(all_photostacker_names):
+    # Filter out invalid names upfront
+    valid_photostacker_names = [
+        name for name in all_photostacker_names
+        if name and name != config.REDUNDANT_VALUE.lower() and name not in config.UNMERGE_START_CONST_VALUES
+    ]
 
-        if (p_name == "") or (p_name == config.REDUNDANT_VALUE.lower()) or (p_name in config.UNMERGE_START_CONST_VALUES):
-            continue
+    for p_name in sorted(valid_photostacker_names):
 
         p1_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_1, p_name)
         p2_df = utils.filter_df_on_column_value(df, config.COL_PHOTOSTACKER_SIGN_2, p_name)
@@ -126,7 +129,7 @@ def summary_of_photostackers_project_wise(df, start_date, end_date):
                 adjust,
                 photostack,
                 review,
-                temp_concat_df.loc[temp_concat_df[config.COL_PROJECT_NAME] == project_name, "extracted_project_date"].iloc[0]
+                temp_concat_df.loc[temp_concat_df[config.COL_PROJECT_NAME] == project_name, "extracted_project_date"].iloc[0],
             ]
 
     df_photostacker_project_wise.sort_values(by=["Photostacker", "extracted_project_date"], ascending=[True, False], inplace=True)
@@ -145,9 +148,7 @@ def summary_of_photostackers_by_month(df: DataFrame) -> tuple[DataFrame, DataFra
     all_months = sorted(df["month"].dropna().unique(), key=lambda x: pd.to_datetime("01-" + x))
 
     raw_photostackers = get_all_photostackers_names(df)
-    all_photostackers = [
-        name for name in raw_photostackers if name not in config.UNMERGE_START_CONST_VALUES and name != config.REDUNDANT_VALUE
-    ]
+    all_photostackers = [name for name in raw_photostackers if name not in config.UNMERGE_START_CONST_VALUES and name != config.REDUNDANT_VALUE]
 
     # Prepare result tables
     df_rename = pd.DataFrame(0, index=all_photostackers, columns=all_months)
